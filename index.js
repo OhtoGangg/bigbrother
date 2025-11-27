@@ -108,9 +108,20 @@ client.on("messageCreate", async (message) => {
     console.log(`Uusi nimi lisätty watchlistille: "${cleaned}"`);
 
     const guild = await client.guilds.fetch(GUILD_ID);
-    
+    await guild.members.fetch(); // varmista että cache on täynnä
+
+    // Skannaa vain uuden nimikkeen osalta
     guild.members.cache.forEach(member => {
-      checkMemberAgainstWatchlist(member);
+      const joinedName = member.user.username.toLowerCase();
+      const joinedTag = member.user.tag.toLowerCase();
+      const joinedId = member.id;
+      const key = `${joinedId}-${cleaned}`;
+
+      if ((cleaned.includes(joinedName) || cleaned.includes(joinedTag) || cleaned.includes(joinedId))
+          && !alreadyAlerted.has(key)) {
+        sendAlert(member, cleaned);
+        alreadyAlerted.add(key);
+      }
     });
   }
 });
