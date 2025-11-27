@@ -24,10 +24,11 @@ const GUILD_ID = process.env.GUILD_ID;
 
 let watchlist = new Set();
 let alreadyAlerted = new Set();
+let guildCache = null; // Jotta ei tarvitse fetchata guildia jatkuvasti
 
-// ------------------------
+// -------------------------------------
 // ALERTTI
-// ------------------------
+// -------------------------------------
 async function sendAlert(member, matchedWord) {
   try {
     const channel = await client.channels.fetch(ALERT_CHANNEL_ID);
@@ -49,10 +50,12 @@ async function sendAlert(member, matchedWord) {
   }
 }
 
-// ------------------------
-// TARKISTUS
-// ------------------------
+// -------------------------------------
+// TARKISTUS (EI ENÄÄ GUILD FETCH SPAMMIA)
+// -------------------------------------
 async function checkMemberAgainstWatchlist(member) {
+  if (!member || !member.user) return;
+
   const username = member.user.username.toLowerCase();
   const tag = member.user.tag.toLowerCase();
   const id = member.id;
@@ -72,17 +75,17 @@ async function checkMemberAgainstWatchlist(member) {
   }
 }
 
-// ------------------------
-// WATCHLIST SKANNAUS
-// ------------------------
+// -------------------------------------
+// WATCHLIST ALUSTUS
+// -------------------------------------
 async function scanWatchlist() {
   try {
     const channel = await client.channels.fetch(WATCHLIST_CHANNEL_ID);
     if (!channel) return;
 
     const messages = await channel.messages.fetch({ limit: 100 });
-    watchlist.clear();
 
+    watchlist.clear();
     for (const msg of messages.values()) {
       const cleaned = msg.content.trim().toLowerCase().replace(/\s+/g, " ");
       if (cleaned.length > 0) watchlist.add(cleaned);
@@ -94,32 +97,31 @@ async function scanWatchlist() {
   }
 }
 
-// ------------------------
+// -------------------------------------
 // READY
-// ------------------------
+// -------------------------------------
 client.once("clientReady", async () => {
   console.log(`Logged in as ${client.user.tag}`);
 
   await scanWatchlist();
 
-  const guild = await client.guilds.fetch(GUILD_ID);
-  await guild.members.fetch();
+  guildCache = await client.guilds.fetch(GUILD_ID);
+  await guildCache.members.fetch(); // TEHDÄÄN VAIN KERRAN!
 
-  await Promise.all(
-    guild.members.cache.map(member => checkMemberAgainstWatchlist(member))
-  );
+  // Käydään läpi kaikki jäsenet käynnistyksessä
+  guildCache.members.cache.forEach(member => checkMemberAgainstWatchlist(member));
 });
 
-// ------------------------
-// JÄSEN LIITTYY
-// ------------------------
+// -------------------------------------
+// UUSI JÄSEN
+// -------------------------------------
 client.on("guildMemberAdd", async (member) => {
-  await checkMemberAgainstWatchlist(member);
+  await checkMemberAgainstWatchlist(member); // Ei hakua → vain tämä jäsen
 });
 
-// ------------------------
-// UUSI WATCHLIST MERKINTÄ
-// ------------------------
+// -------------------------------------
+// WATCHLISTIN UUSI MERKINTÄ
+// -------------------------------------
 client.on("messageCreate", async (message) => {
   if (message.channel.id !== WATCHLIST_CHANNEL_ID || message.author.bot) return;
 
@@ -129,12 +131,8 @@ client.on("messageCreate", async (message) => {
   watchlist.add(cleaned);
   console.log(`Uusi watchlist-merkintä: "${cleaned}"`);
 
-  const guild = await client.guilds.fetch(GUILD_ID);
-  await guild.members.fetch();
-
-  await Promise.all(
-    guild.members.cache.map(member => checkMemberAgainstWatchlist(member))
-  );
+  // Käydään läpi kaikki guild-cachesta ilman fetchiä
+  guildCache.members.cache.forEach(member => checkMemberAgainstWatchlist(member));
 });
 
 client.login(process.env.TOKEN);
