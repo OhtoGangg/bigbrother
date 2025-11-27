@@ -1,5 +1,5 @@
 require('dotenv').config();
-require('./keepalive'); // pitää palvelun hereillä Free tierillä
+require('./keepalive'); // Laitoin tän ihan vaan että renderin "Free tier" ei ota itteensä et on epäaktiivinen botti
 
 const { Client, GatewayIntentBits, EmbedBuilder, Collection } = require('discord.js');
 
@@ -17,10 +17,10 @@ const ALERT_CHANNEL_ID = process.env.ALERT_CHANNEL_ID;
 
 let watchlist = new Collection();
 
-client.once('ready', () => {
+client.once('clientReady', () => {
   console.log(`Logged in as ${client.user.tag}`);
   scanWatchlist();
-  setInterval(scanWatchlist, 10 * 60 * 1000); // päivitys 10 min välein
+  setInterval(scanWatchlist, 1 * 60 * 1000); // Skannaa listaa minuutin välein jotta jää näädät kiikkiin!
 });
 
 async function scanWatchlist() {
