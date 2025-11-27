@@ -1,4 +1,5 @@
 const express = require("express");
+const fetch = require("node-fetch");
 const app = express();
 
 app.all("/", (req, res) => {
@@ -6,3 +7,13 @@ app.all("/", (req, res) => {
 });
 
 app.listen(3000, () => console.log("Botin pitäisi nyt pysyä hereillä!"));
+
+const KEEP_ALIVE_URL = 'https://bigbrother-a64y.onrender.com'; 
+setInterval(async () => {
+  try {
+    await fetch(KEEP_ALIVE_URL);
+    console.log('🟢 Keep-alive ping lähetetty Renderille');
+  } catch (err) {
+    console.log('⚠️ Keep-alive ping epäonnistui:', err.message);
+  }
+}, 1000 * 60 * 5);
