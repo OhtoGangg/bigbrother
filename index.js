@@ -112,7 +112,15 @@ client.on("messageCreate", async (message) => {
     const guild = await client.guilds.fetch(GUILD_ID);
     await guild.members.fetch();
 
-    // Tarkistaa vain uuden watchlist-nimen
+client.on("messageCreate", async (message) => {
+  if (message.channel.id === WATCHLIST_CHANNEL_ID && !message.author.bot) {
+    const cleaned = message.content.trim().toLowerCase().replace(/\s+/g, " ");
+    if (cleaned.length === 0) return;
+
+    watchlist.set(message.id, cleaned);
+    console.log(`Uusi nimi lisätty watchlistille: "${cleaned}"`);
+
+    const guild = await client.guilds.fetch(GUILD_ID);
     guild.members.cache.forEach(member => {
       const key = `${member.id}-${cleaned}`;
       if ((cleaned.includes(member.user.username.toLowerCase())
