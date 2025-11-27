@@ -120,6 +120,7 @@ client.on("messageCreate", async (message) => {
     watchlist.set(message.id, cleaned);
     console.log(`Uusi nimi lisätty watchlistille: "${cleaned}"`);
 
+    // Käytä vain cachea, ei fetchiä
     const guild = await client.guilds.fetch(GUILD_ID);
     guild.members.cache.forEach(member => {
       const key = `${member.id}-${cleaned}`;
