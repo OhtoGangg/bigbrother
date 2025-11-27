@@ -108,8 +108,7 @@ client.on("messageCreate", async (message) => {
     console.log(`Uusi nimi lisätty watchlistille: "${cleaned}"`);
 
     const guild = await client.guilds.fetch(GUILD_ID);
-    await guild.members.fetch();
-
+    
     guild.members.cache.forEach(member => {
       checkMemberAgainstWatchlist(member);
     });
