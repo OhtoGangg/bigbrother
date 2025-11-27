@@ -2,13 +2,13 @@ require('dotenv').config();
 const express = require('express');
 const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
 
-// --- KEEP RENDER ALIVE ---
+// Logeihin näkyy että paska toimii:
 const PORT = process.env.PORT || 10000;
 const app = express();
 app.get('/', (req, res) => res.send('✅ Big Brother bot running!'));
 app.listen(PORT, () => console.log(`🌐 HTTP server alive on port ${PORT}`));
 
-// --- DISCORD CLIENT ---
+// Botin clientti
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -24,22 +24,20 @@ const GUILD_ID = process.env.GUILD_ID;
 
 let watchlist = new Set();
 let alreadyAlerted = new Set();
-let guildCache = null; // Jotta ei tarvitse fetchata guildia jatkuvasti
+let guildCache = null; 
 
-// -------------------------------------
-// ALERTTI
-// -------------------------------------
+// Tässä kyseinen alertti asiasta:
 async function sendAlert(member, matchedWord) {
   try {
     const channel = await client.channels.fetch(ALERT_CHANNEL_ID);
 
     const embed = new EmbedBuilder()
-      .setTitle("⚠️ NÄÄTÄ HAVAITTU!")
+      .setTitle("📢 BINGO!")
       .setColor(0xFF0000)
-      .setDescription("Jäsen vastaa watchlistissä olevaa tietoa")
+      .setDescription("Jäsen vastaa mustalla listalla olevaa tietoa")
       .addFields(
-        { name: "👤 Käyttäjä", value: `${member.user.tag} (ID: ${member.id})` },
-        { name: "🔍 Watchlist-osuma", value: matchedWord }
+        { name: "👤 Käyttäjä:", value: `${member.user.tag} (ID: ${member.id})` },
+        { name: "🔍 Nimi löytyy listasta:", value: matchedWord }
       )
       .setThumbnail(member.user.displayAvatarURL())
       .setTimestamp();
@@ -50,9 +48,6 @@ async function sendAlert(member, matchedWord) {
   }
 }
 
-// -------------------------------------
-// TARKISTUS (EI ENÄÄ GUILD FETCH SPAMMIA)
-// -------------------------------------
 async function checkMemberAgainstWatchlist(member) {
   if (!member || !member.user) return;
 
@@ -75,9 +70,7 @@ async function checkMemberAgainstWatchlist(member) {
   }
 }
 
-// -------------------------------------
-// WATCHLIST ALUSTUS
-// -------------------------------------
+// Watchlistin setit:
 async function scanWatchlist() {
   try {
     const channel = await client.channels.fetch(WATCHLIST_CHANNEL_ID);
@@ -97,9 +90,7 @@ async function scanWatchlist() {
   }
 }
 
-// -------------------------------------
-// READY
-// -------------------------------------
+// Ready:
 client.once("clientReady", async () => {
   console.log(`Logged in as ${client.user.tag}`);
 
@@ -112,16 +103,12 @@ client.once("clientReady", async () => {
   guildCache.members.cache.forEach(member => checkMemberAgainstWatchlist(member));
 });
 
-// -------------------------------------
-// UUSI JÄSEN
-// -------------------------------------
+// Mitä tapahtuu kun tulee uus jäsen palvelimelle:
 client.on("guildMemberAdd", async (member) => {
-  await checkMemberAgainstWatchlist(member); // Ei hakua → vain tämä jäsen
+  await checkMemberAgainstWatchlist(member);
 });
 
-// -------------------------------------
-// WATCHLISTIN UUSI MERKINTÄ
-// -------------------------------------
+// Kun joku lisää uuden nimen listaan:
 client.on("messageCreate", async (message) => {
   if (message.channel.id !== WATCHLIST_CHANNEL_ID || message.author.bot) return;
 
