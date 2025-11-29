@@ -5,7 +5,7 @@ app.all("/", (req, res) => {
   res.send("Bot is running!");
 });
 
-app.listen(3000, () => console.log("Botin pitäisi nyt pysyä hereillä!"));
+app.listen(10000, () => console.log("Botin pitäisi nyt pysyä hereillä!"));
 
 const KEEP_ALIVE_URL = 'https://bigbrother-a64y.onrender.com'; 
 setInterval(async () => {
