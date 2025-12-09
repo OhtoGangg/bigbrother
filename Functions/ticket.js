@@ -93,6 +93,9 @@ module.exports = {
             ]
         });
 
+        // Tallenna luoja kanavan topictiin
+        await channel.setTopic(`ticketCreator:${user.id}`);
+
         const embed = new EmbedBuilder()
             .setTitle(`Tiketti: ${selected}`)
             .setDescription(`Tervetuloa ticket-kanavaasi!\nStaff seuraa tilannetta.`)
@@ -127,17 +130,21 @@ module.exports = {
                 // Hae viestit ja kerää osallistujat
                 const messages = await channel.messages.fetch({ limit: 100 });
                 const participants = [...new Set(messages.map(m => m.author.tag))];
-                const ticketCreator = messages.last()?.author.tag || "Tuntematon";
+
+                // Hae tiketin luoja topicista
+                const creatorId = channel.topic?.split("ticketCreator:")[1];
+                const ticketCreator = interaction.guild.members.cache.get(creatorId)?.user.tag || "Tuntematon";
 
                 // Luo HTML-transcript
-                let html = `<html><body>`;
-                html += `<h2>${channel.name}</h2>`;
-                html += `<p><strong>Aihe:</strong> ${channel.name.split('-')[1]}</p>`;
-                html += `<hr>`;
-                messages.reverse().forEach(m => {
-                    html += `<p><strong>${m.author.tag}:</strong> ${m.content}</p>`;
+                let html = `<!--\n<Server-Info>\nServer: ${interaction.guild.name} (${interaction.guild.id})\nChannel: ${channel.name} (${channel.id})\nMessages: ${messages.size}\n\n<User-Info>\n`;
+                messages.forEach((m, i) => {
+                    html += `${i + 1} - <@${m.author.id}> - ${m.author.tag}\n`;
                 });
-                html += `<hr></body></html>`;
+                html += `\n<Transcript>\n-->\n<html><body>\n`;
+                messages.reverse().forEach(m => {
+                    html += `<p><strong>${m.author.tag}:</strong> ${m.content}</p>\n`;
+                });
+                html += `</body></html>`;
 
                 const filePath = `./transcript-${channel.name}.html`;
                 fs.writeFileSync(filePath, html);
