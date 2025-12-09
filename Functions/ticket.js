@@ -1,6 +1,14 @@
 const path = require("path");
 const config = require(path.resolve(__dirname, "../config.json"));
-const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, StringSelectMenuBuilder, ChannelType, PermissionFlagsBits } = require("discord.js");
+const { 
+    EmbedBuilder, 
+    ButtonBuilder, 
+    ButtonStyle, 
+    ActionRowBuilder, 
+    StringSelectMenuBuilder, 
+    ChannelType, 
+    PermissionFlagsBits 
+} = require("discord.js");
 
 module.exports = {
     // Lähetä ticket-panel kanavalle
@@ -50,7 +58,12 @@ module.exports = {
             ]);
 
         const row = new ActionRowBuilder().addComponents(menu);
-        await interaction.reply({ content: "Valitse aihe:", components: [row], ephemeral: true });
+
+        await interaction.reply({ 
+            content: "Valitse aihe:", 
+            components: [row], 
+            flags: 64 // ephemeral
+        });
     },
 
     // Luo ticket-kanava
@@ -84,40 +97,43 @@ module.exports = {
         const row = new ActionRowBuilder().addComponents(closeButton);
 
         await channel.send({ content: `<@${user.id}>`, embeds: [embed], components: [row] });
-        await interaction.reply({ content: `Ticket luotu: ${channel}`, ephemeral: true });
+
+        await interaction.reply({ 
+            content: `Ticket luotu: ${channel}`, 
+            flags: 64 // ephemeral
+        });
     },
 
     // Lisää jäsen ticket-kanavaan
     async addMember(interaction, member) {
         const channel = interaction.channel;
-        if (!channel) return interaction.reply({ content: "Kanavaa ei löytynyt.", ephemeral: true });
+        if (!channel) return interaction.reply({ content: "Kanavaa ei löytynyt.", flags: 64 });
 
         await channel.permissionOverwrites.edit(member.id, { ViewChannel: true, SendMessages: true });
-        interaction.reply({ content: `${member} lisätty ticketiin!`, ephemeral: true });
+        interaction.reply({ content: `${member} lisätty ticketiin!`, flags: 64 });
     },
 
     // Poista jäsen ticket-kanavasta
     async removeMember(interaction, member) {
         const channel = interaction.channel;
-        if (!channel) return interaction.reply({ content: "Kanavaa ei löytynyt.", ephemeral: true });
+        if (!channel) return interaction.reply({ content: "Kanavaa ei löytynyt.", flags: 64 });
 
         await channel.permissionOverwrites.delete(member.id);
-        interaction.reply({ content: `${member} poistettu ticketistä!`, ephemeral: true });
+        interaction.reply({ content: `${member} poistettu ticketistä!`, flags: 64 });
     },
 
     // Sulje ticket
     async closeTicket(interaction) {
         const channel = interaction.channel;
-        if (!channel) return interaction.reply({ content: "Kanavaa ei löytynyt.", ephemeral: true });
+        if (!channel) return interaction.reply({ content: "Kanavaa ei löytynyt.", flags: 64 });
 
-        await interaction.reply({ content: "Ticket suljetaan 10 sekunnin kuluttua...", ephemeral: true });
+        await interaction.reply({ content: "Ticket suljetaan 10 sekunnin kuluttua...", flags: 64 });
 
         setTimeout(async () => {
             const archiveChannel = interaction.guild.channels.cache.get(config.ticket.archiveChannelId);
             if (archiveChannel) {
                 const messages = await channel.messages.fetch({ limit: 100 });
                 const archiveText = messages.map(m => `${m.author.tag}: ${m.content}`).join("\n");
-
                 await archiveChannel.send({ content: `Tiketti ${channel.name} arkistoitu:\n\n${archiveText}` });
             }
 
