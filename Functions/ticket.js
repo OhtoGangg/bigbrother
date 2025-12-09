@@ -28,25 +28,33 @@ module.exports = {
         await channel.send({ embeds: [embed], components: [row] });
     },
 
-    // Käsittele kaikki interaktiot: painikkeet & dropdown
+    // Käsittele interaktiot: painikkeet & dropdown
     async handleInteraction(interaction) {
-        if (interaction.isButton()) {
-            if (interaction.customId === "create_ticket") {
-                await this.showTicketMenu(interaction);
-            } else if (interaction.customId.startsWith("close_ticket")) {
-                await this.closeTicket(interaction);
-            }
-        }
+        if (!interaction.isButton() && !interaction.isStringSelectMenu()) return;
 
-        if (interaction.isStringSelectMenu()) {
-            if (interaction.customId === "ticket_select") {
-                await this.createTicketChannel(interaction);
+        try {
+            if (interaction.isButton()) {
+                if (interaction.customId === "create_ticket") {
+                    await this.showTicketMenu(interaction);
+                } else if (interaction.customId.startsWith("close_ticket")) {
+                    await this.closeTicket(interaction);
+                }
             }
+
+            if (interaction.isStringSelectMenu()) {
+                if (interaction.customId === "ticket_select") {
+                    await this.createTicketChannel(interaction);
+                }
+            }
+        } catch (err) {
+            console.error("Virhe handleInteractionissä:", err);
         }
     },
 
     // Näytä dropdown aihevalinnalla
     async showTicketMenu(interaction) {
+        await interaction.deferReply({ ephemeral: true });
+
         const menu = new StringSelectMenuBuilder()
             .setCustomId("ticket_select")
             .setPlaceholder("Valitse ticketin aihe")
@@ -59,19 +67,18 @@ module.exports = {
 
         const row = new ActionRowBuilder().addComponents(menu);
 
-        await interaction.reply({ 
-            content: "Valitse aihe:", 
-            components: [row], 
-            flags: 64 // ephemeral
-        });
+        await interaction.editReply({ content: "Valitse aihe:", components: [row] });
     },
 
     // Luo ticket-kanava
     async createTicketChannel(interaction) {
+        await interaction.deferReply({ ephemeral: true });
+
         const guild = interaction.guild;
         const user = interaction.user;
         const selected = interaction.values[0];
 
+        // Luo kanava
         const channel = await guild.channels.create({
             name: `ticket-${selected}-${user.username}`.toLowerCase().replace(/ /g, "-"),
             type: ChannelType.GuildText,
@@ -98,36 +105,33 @@ module.exports = {
 
         await channel.send({ content: `<@${user.id}>`, embeds: [embed], components: [row] });
 
-        await interaction.reply({ 
-            content: `Ticket luotu: ${channel}`, 
-            flags: 64 // ephemeral
-        });
+        await interaction.editReply({ content: `Ticket luotu: ${channel}` });
     },
 
     // Lisää jäsen ticket-kanavaan
     async addMember(interaction, member) {
         const channel = interaction.channel;
-        if (!channel) return interaction.reply({ content: "Kanavaa ei löytynyt.", flags: 64 });
+        if (!channel) return interaction.reply({ content: "Kanavaa ei löytynyt.", ephemeral: true });
 
         await channel.permissionOverwrites.edit(member.id, { ViewChannel: true, SendMessages: true });
-        interaction.reply({ content: `${member} lisätty ticketiin!`, flags: 64 });
+        await interaction.reply({ content: `${member} lisätty ticketiin!`, ephemeral: true });
     },
 
     // Poista jäsen ticket-kanavasta
     async removeMember(interaction, member) {
         const channel = interaction.channel;
-        if (!channel) return interaction.reply({ content: "Kanavaa ei löytynyt.", flags: 64 });
+        if (!channel) return interaction.reply({ content: "Kanavaa ei löytynyt.", ephemeral: true });
 
         await channel.permissionOverwrites.delete(member.id);
-        interaction.reply({ content: `${member} poistettu ticketistä!`, flags: 64 });
+        await interaction.reply({ content: `${member} poistettu ticketistä!`, ephemeral: true });
     },
 
     // Sulje ticket
     async closeTicket(interaction) {
         const channel = interaction.channel;
-        if (!channel) return interaction.reply({ content: "Kanavaa ei löytynyt.", flags: 64 });
+        if (!channel) return interaction.reply({ content: "Kanavaa ei löytynyt.", ephemeral: true });
 
-        await interaction.reply({ content: "Ticket suljetaan 10 sekunnin kuluttua...", flags: 64 });
+        await interaction.reply({ content: "Ticket suljetaan 10 sekunnin kuluttua...", ephemeral: true });
 
         setTimeout(async () => {
             const archiveChannel = interaction.guild.channels.cache.get(config.ticket.archiveChannelId);
