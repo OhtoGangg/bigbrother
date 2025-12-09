@@ -54,6 +54,7 @@ module.exports = {
 
     // Näytä dropdown aihevalinnalla
     async showTicketMenu(interaction) {
+        // Defer reply välittömästi, jotta vältetään "Unknown interaction"
         await interaction.deferReply({ ephemeral: true });
 
         const menu = new StringSelectMenuBuilder()
@@ -113,29 +114,29 @@ module.exports = {
         await interaction.editReply({ content: `Ticket luotu: ${channel}` });
     },
 
-    // Sulje ticket ja arkistoi .txt
+    // Sulje ticket ja arkistoi
     async closeTicket(interaction) {
+        await interaction.deferReply({ ephemeral: true });
+
         const channel = interaction.channel;
-        if (!channel) return interaction.reply({ content: "Kanavaa ei löytynyt.", ephemeral: true });
+        if (!channel) return;
 
         const userClosing = interaction.user;
 
-        await interaction.reply({ content: "Ticket suljetaan 10 sekunnin kuluttua...", ephemeral: true });
+        await interaction.editReply({ content: "Ticket suljetaan 10 sekunnin kuluttua..." });
 
         setTimeout(async () => {
             try {
                 const archiveChannel = interaction.guild.channels.cache.get(config.ticket.archiveChannelId);
                 if (!archiveChannel) return channel.send("Arkisto-kanavaa ei löytynyt.");
 
-                // Hae viestit ja kerää osallistujat
                 const messages = await channel.messages.fetch({ limit: 100 });
                 const participants = [...new Set(messages.map(m => m.author.tag))];
 
-                // Hae tiketin luoja topicista
                 const creatorId = channel.topic?.split("ticketCreator:")[1];
                 const ticketCreator = interaction.guild.members.cache.get(creatorId)?.user.tag || "Tuntematon";
 
-                // Luo TXT-transcript
+                // Luo .txt-transcript
                 let transcript = `=== Tiketti: ${channel.name} ===\nAihe: ${channel.name.split('-')[1]}\nLuonut: ${ticketCreator}\nSulki: ${userClosing.tag}\nOsallistujat: ${participants.join(", ")}\n\n--- Viestit ---\n\n`;
                 messages.reverse().forEach(m => {
                     transcript += `[${m.createdAt.toISOString()}] ${m.author.tag}: ${m.content}\n`;
@@ -144,7 +145,6 @@ module.exports = {
                 const filePath = `./transcript-${channel.name}.txt`;
                 fs.writeFileSync(filePath, transcript);
 
-                // Luo Embed meta-tiedoilla
                 const embed = new EmbedBuilder()
                     .setTitle(`Ticket arkistoitu: ${channel.name}`)
                     .addFields(
@@ -156,16 +156,8 @@ module.exports = {
                     )
                     .setColor("Grey");
 
-                // Lähetä arkisto-kanavalle embed + transcript.txt
-                await archiveChannel.send({
-                    embeds: [embed],
-                    files: [filePath]
-                });
-
-                // Poista temp-tiedosto
+                await archiveChannel.send({ embeds: [embed], files: [filePath] });
                 fs.unlinkSync(filePath);
-
-                // Poista kanava
                 await channel.delete();
 
             } catch (err) {
@@ -176,19 +168,23 @@ module.exports = {
 
     // Lisää jäsen ticket-kanavaan
     async addMember(interaction, member) {
+        await interaction.deferReply({ ephemeral: true });
+
         const channel = interaction.channel;
-        if (!channel) return interaction.reply({ content: "Kanavaa ei löytynyt.", ephemeral: true });
+        if (!channel) return;
 
         await channel.permissionOverwrites.edit(member.id, { ViewChannel: true, SendMessages: true });
-        await interaction.reply({ content: `${member} lisätty ticketiin!`, ephemeral: true });
+        await interaction.editReply({ content: `${member} lisätty ticketiin!` });
     },
 
     // Poista jäsen ticket-kanavasta
     async removeMember(interaction, member) {
+        await interaction.deferReply({ ephemeral: true });
+
         const channel = interaction.channel;
-        if (!channel) return interaction.reply({ content: "Kanavaa ei löytynyt.", ephemeral: true });
+        if (!channel) return;
 
         await channel.permissionOverwrites.delete(member.id);
-        await interaction.reply({ content: `${member} poistettu ticketistä!`, ephemeral: true });
+        await interaction.editReply({ content: `${member} poistettu ticketistä!` });
     }
 };
