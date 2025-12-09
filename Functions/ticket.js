@@ -89,7 +89,7 @@ module.exports = {
                 { id: config.ticket.roleYllapito, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
                 { id: config.ticket.roleValvoja, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
                 { id: guild.roles.everyone.id, deny: [PermissionFlagsBits.ViewChannel] },
-                { id: guild.members.me.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] } // botin oikeudet
+                { id: guild.members.me.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] }
             ]
         });
 
@@ -113,7 +113,7 @@ module.exports = {
         await interaction.editReply({ content: `Ticket luotu: ${channel}` });
     },
 
-    // Sulje ticket ja arkistoi
+    // Sulje ticket ja arkistoi .txt
     async closeTicket(interaction) {
         const channel = interaction.channel;
         if (!channel) return interaction.reply({ content: "Kanavaa ei löytynyt.", ephemeral: true });
@@ -135,19 +135,14 @@ module.exports = {
                 const creatorId = channel.topic?.split("ticketCreator:")[1];
                 const ticketCreator = interaction.guild.members.cache.get(creatorId)?.user.tag || "Tuntematon";
 
-                // Luo HTML-transcript
-                let html = `<!--\n<Server-Info>\nServer: ${interaction.guild.name} (${interaction.guild.id})\nChannel: ${channel.name} (${channel.id})\nMessages: ${messages.size}\n\n<User-Info>\n`;
-                messages.forEach((m, i) => {
-                    html += `${i + 1} - <@${m.author.id}> - ${m.author.tag}\n`;
-                });
-                html += `\n<Transcript>\n-->\n<html><body>\n`;
+                // Luo TXT-transcript
+                let transcript = `=== Tiketti: ${channel.name} ===\nAihe: ${channel.name.split('-')[1]}\nLuonut: ${ticketCreator}\nSulki: ${userClosing.tag}\nOsallistujat: ${participants.join(", ")}\n\n--- Viestit ---\n\n`;
                 messages.reverse().forEach(m => {
-                    html += `<p><strong>${m.author.tag}:</strong> ${m.content}</p>\n`;
+                    transcript += `[${m.createdAt.toISOString()}] ${m.author.tag}: ${m.content}\n`;
                 });
-                html += `</body></html>`;
 
-                const filePath = `./transcript-${channel.name}.html`;
-                fs.writeFileSync(filePath, html);
+                const filePath = `./transcript-${channel.name}.txt`;
+                fs.writeFileSync(filePath, transcript);
 
                 // Luo Embed meta-tiedoilla
                 const embed = new EmbedBuilder()
@@ -161,7 +156,7 @@ module.exports = {
                     )
                     .setColor("Grey");
 
-                // Lähetä arkisto-kanavalle embed + transcript.html
+                // Lähetä arkisto-kanavalle embed + transcript.txt
                 await archiveChannel.send({
                     embeds: [embed],
                     files: [filePath]
