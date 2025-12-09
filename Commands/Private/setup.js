@@ -1,4 +1,4 @@
-const ticketHandler = require("../../Events/Functions/ticket.js") // Täällä importoidaan kaikki funktiot ticket.js tiedostosta ticketHandler muuttujaan
+const ticketHandler = require("../Functions/ticket.js") // Täällä importoidaan kaikki funktiot ticket.js tiedostosta ticketHandler muuttujaan
 
 const { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagBits, InteractionContextType, MessageFlags } = require("discord.js")
 
