@@ -121,5 +121,3 @@ client.on("messageCreate", async (message) => {
   // Käydään läpi kaikki guild-cachesta ilman fetchiä
   guildCache.members.cache.forEach(member => checkMemberAgainstWatchlist(member));
 });
-
-client.login(process.env.TOKEN);
