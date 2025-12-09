@@ -23,4 +23,3 @@ module.exports = {
         await interaction.reply({ content: `Tikettipaneeli lähetetty onnistuneesti kanavalle: ${channel}`, flags: MessageFlags.Ephemeral })
     }
   }
-}
