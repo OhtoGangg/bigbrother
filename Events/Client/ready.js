@@ -11,7 +11,7 @@ module.exports = {
             console.log(`Kirjauduttu sisään: ${client.user.tag}`);
 
             // Lähetä ticket-panel tiettyyn kanavaan
-            const panelChannel = client.channels.cache.get(config.ticketPanelChannelId);
+            const panelChannel = client.channels.cache.get(config.ticket.ticketPanelChannelId);
             if (panelChannel) {
                 await ticket.sendTicketPanel(panelChannel);
                 console.log("Ticket-panel lähetetty kanavalle.");
