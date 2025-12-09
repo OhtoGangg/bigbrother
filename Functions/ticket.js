@@ -87,7 +87,8 @@ module.exports = {
                 { id: user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
                 { id: config.ticket.roleYllapito, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
                 { id: config.ticket.roleValvoja, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
-                { id: guild.roles.everyone.id, deny: [PermissionFlagsBits.ViewChannel] }
+                { id: guild.roles.everyone.id, deny: [PermissionFlagsBits.ViewChannel] },
+                { id: guild.members.me.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] } // tämä on botin oma
             ]
         });
 
