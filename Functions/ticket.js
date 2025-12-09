@@ -54,9 +54,6 @@ module.exports = {
 
     // Näytä dropdown aihevalinnalla
     async showTicketMenu(interaction) {
-        // Defer reply välittömästi, jotta vältetään "Unknown interaction"
-        await interaction.deferReply({ ephemeral: true });
-
         const menu = new StringSelectMenuBuilder()
             .setCustomId("ticket_select")
             .setPlaceholder("Valitse ticketin aihe")
@@ -69,13 +66,12 @@ module.exports = {
 
         const row = new ActionRowBuilder().addComponents(menu);
 
-        await interaction.editReply({ content: "Valitse aihe:", components: [row] });
+        // Lähetä ephemeral-viesti valikolla
+        await interaction.reply({ content: "Valitse aihe:", components: [row], ephemeral: true });
     },
 
-    // Luo ticket-kanava
+    // Luo ticket-kanava ja poista dropdown ephemeral-viestistä
     async createTicketChannel(interaction) {
-        await interaction.deferReply({ ephemeral: true });
-
         const guild = interaction.guild;
         const user = interaction.user;
         const selected = interaction.values[0];
@@ -94,7 +90,6 @@ module.exports = {
             ]
         });
 
-        // Tallenna luoja kanavan topictiin
         await channel.setTopic(`ticketCreator:${user.id}`);
 
         const embed = new EmbedBuilder()
@@ -111,19 +106,18 @@ module.exports = {
 
         await channel.send({ content: `<@${user.id}>`, embeds: [embed], components: [row] });
 
-        await interaction.editReply({ content: `Ticket luotu: ${channel}` });
+        // Poista ephemeral-valikko viestistä ja lähetä vahvistus
+        await interaction.update({ content: `Ticket luotu: ${channel}`, components: [] });
     },
 
     // Sulje ticket ja arkistoi
     async closeTicket(interaction) {
-        await interaction.deferReply({ ephemeral: true });
-
         const channel = interaction.channel;
         if (!channel) return;
 
         const userClosing = interaction.user;
 
-        await interaction.editReply({ content: "Ticket suljetaan 10 sekunnin kuluttua..." });
+        await interaction.reply({ content: "Ticket suljetaan 10 sekunnin kuluttua...", ephemeral: true });
 
         setTimeout(async () => {
             try {
@@ -168,23 +162,19 @@ module.exports = {
 
     // Lisää jäsen ticket-kanavaan
     async addMember(interaction, member) {
-        await interaction.deferReply({ ephemeral: true });
-
         const channel = interaction.channel;
         if (!channel) return;
 
         await channel.permissionOverwrites.edit(member.id, { ViewChannel: true, SendMessages: true });
-        await interaction.editReply({ content: `${member} lisätty ticketiin!` });
+        await interaction.reply({ content: `${member} lisätty ticketiin!`, ephemeral: true });
     },
 
     // Poista jäsen ticket-kanavasta
     async removeMember(interaction, member) {
-        await interaction.deferReply({ ephemeral: true });
-
         const channel = interaction.channel;
         if (!channel) return;
 
         await channel.permissionOverwrites.delete(member.id);
-        await interaction.editReply({ content: `${member} poistettu ticketistä!` });
+        await interaction.reply({ content: `${member} poistettu ticketistä!`, ephemeral: true });
     }
 };
