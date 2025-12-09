@@ -13,33 +13,31 @@ module.exports = {
         ),
     
     async execute(interaction) {
-        const member = interaction.options.getMember("käyttäjä");
+        const memberToAdd = interaction.options.getMember("käyttäjä");
 
-        if (!member) {
-            return interaction.reply({ content: "Käyttäjää ei löytynyt.", flags: 64 });
+        if (!memberToAdd) {
+            return interaction.reply({ content: "Käyttäjää ei löytynyt.", ephemeral: true });
         }
 
-        // Roolit configista OIKEASTA polusta
+        // Roolitarkistus
         const allowedRoles = [
             config.ticket.roleYllapito,
             config.ticket.roleValvoja
         ];
 
-        // Debug (näkyy vain consoleen)
-        console.log("Käyttäjän roolit:", interaction.member.roles.cache.map(r => r.id));
-        console.log("Sallitut roolit:", allowedRoles);
+        const guildMember = interaction.guild.members.cache.get(interaction.user.id);
 
-        const hasRole = interaction.member.roles.cache.some(role => allowedRoles.includes(role.id));
-
+        const hasRole = guildMember.roles.cache.some(role => allowedRoles.includes(role.id));
         if (!hasRole) {
-            return interaction.reply({ content: "Sinulla ei ole lupaa käyttää tätä komentoa.", flags: 64 });
+            return interaction.reply({ content: "Sinulla ei ole lupaa käyttää tätä komentoa.", ephemeral: true });
         }
 
+        // Lisää jäsen ticket-kanavaan
         try {
-            await ticket.addMember(interaction, member);
+            await ticket.addMember(interaction, memberToAdd);
         } catch (err) {
             console.error("Virhe lisää-komennossa:", err);
-            interaction.reply({ content: "Tapahtui virhe käyttäjän lisäämisessä.", flags: 64 });
+            interaction.reply({ content: "Tapahtui virhe käyttäjän lisäämisessä.", ephemeral: true });
         }
     }
-}
+};
