@@ -15,9 +15,9 @@ module.exports = {
     // Lähetä ticket-panel kanavalle
     async sendTicketPanel(channel) {
         const embed = new EmbedBuilder()
-            .setTitle("Lässyn lässyn lää")
-            .setDescription("Luo uusi tiketti painamalla nappia alla.")
-            .setColor("Blue");
+            .setTitle("Avaa uusi tiketti!")
+            .setDescription("Valikoi mikä aiheista kuvastaa ongelmaasi parhaiten alta:")
+            .setColor("Violet");
 
         const button = new ButtonBuilder()
             .setCustomId("create_ticket")
@@ -54,9 +54,6 @@ module.exports = {
 
     // Näytä dropdown aihevalinnalla
     async showTicketMenu(interaction) {
-        // Deferataan interaction, jotta Discord ei näe sitä vanhaksi
-        await interaction.deferReply({ ephemeral: true });
-
         const menu = new StringSelectMenuBuilder()
             .setCustomId("ticket_select")
             .setPlaceholder("Valitse ticketin aihe")
@@ -69,7 +66,8 @@ module.exports = {
 
         const row = new ActionRowBuilder().addComponents(menu);
 
-        await interaction.editReply({ content: "Valitse aihe:", components: [row] });
+        // Lähetetään ephemeral-valikko, ei deferReplyä
+        await interaction.reply({ content: "Valitse aihe:", components: [row], flags: 64 });
     },
 
     // Luo ticket-kanava ja poista dropdown ephemeral-viestistä
@@ -78,7 +76,7 @@ module.exports = {
         const user = interaction.user;
         const selected = interaction.values[0];
 
-        // Poistetaan ephemeral-dropdown heti
+        // Poistetaan ephemeral-valikko heti
         await interaction.update({ content: `Ticket luotu: ${selected}`, components: [] });
 
         // Luo kanava
@@ -99,8 +97,8 @@ module.exports = {
 
         const embed = new EmbedBuilder()
             .setTitle(`Tiketti: ${selected}`)
-            .setDescription(`Tervetuloa ticket-kanavaasi!\nStaff seuraa tilannetta.`)
-            .setColor("Green");
+            .setDescription(`Kerro mitä tikettisi koskee.\nHenkilökunta käsittelee tämän mahdollisimman hyvin tietojesi perusteella.`)
+            .setColor("Violet");
 
         const closeButton = new ButtonBuilder()
             .setCustomId("close_ticket")
@@ -119,7 +117,7 @@ module.exports = {
 
         const userClosing = interaction.user;
 
-        await interaction.reply({ content: "Ticket suljetaan 10 sekunnin kuluttua...", ephemeral: true });
+        await interaction.reply({ content: "Ticket suljetaan muutaman sekunnin kuluttua...", flags: 64 });
 
         setTimeout(async () => {
             try {
@@ -132,7 +130,6 @@ module.exports = {
                 const creatorId = channel.topic?.split("ticketCreator:")[1];
                 const ticketCreator = interaction.guild.members.cache.get(creatorId)?.user.tag || "Tuntematon";
 
-                // Luo .txt-transcript
                 let transcript = `=== Tiketti: ${channel.name} ===\nAihe: ${channel.name.split('-')[1]}\nLuonut: ${ticketCreator}\nSulki: ${userClosing.tag}\nOsallistujat: ${participants.join(", ")}\n\n--- Viestit ---\n\n`;
                 messages.reverse().forEach(m => {
                     transcript += `[${m.createdAt.toISOString()}] ${m.author.tag}: ${m.content}\n`;
@@ -142,7 +139,7 @@ module.exports = {
                 fs.writeFileSync(filePath, transcript);
 
                 const embed = new EmbedBuilder()
-                    .setTitle(`Ticket arkistoitu: ${channel.name}`)
+                    .setTitle(`Tiketti arkistoitu: ${channel.name}`)
                     .addFields(
                         { name: "Tiketin nimi", value: channel.name, inline: true },
                         { name: "Aihe", value: channel.name.split('-')[1], inline: true },
@@ -168,7 +165,7 @@ module.exports = {
         if (!channel) return;
 
         await channel.permissionOverwrites.edit(member.id, { ViewChannel: true, SendMessages: true });
-        await interaction.reply({ content: `${member} lisätty ticketiin!`, ephemeral: true });
+        await interaction.reply({ content: `${member} lisätty tiketiin!`, flags: 64 });
     },
 
     // Poista jäsen ticket-kanavasta
@@ -177,6 +174,6 @@ module.exports = {
         if (!channel) return;
 
         await channel.permissionOverwrites.delete(member.id);
-        await interaction.reply({ content: `${member} poistettu ticketistä!`, ephemeral: true });
+        await interaction.reply({ content: `${member} poistettu tiketistä!`, flags: 64 });
     }
 };
