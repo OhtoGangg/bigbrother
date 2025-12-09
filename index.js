@@ -8,10 +8,6 @@ if (!process.env.TOKEN) {
 
 const PORT = process.env.PORT || 10000; // Render käyttää port 10000, joten oletetaan se
 
-app.get('/', (req, res) => {
-  res.send('✅ Bot toimii ja HTTP-serveri on pystyssä!');
-});
-
 app.listen(PORT, () => {
   console.log(`🌐 HTTP server running on port ${PORT}`);
 });
