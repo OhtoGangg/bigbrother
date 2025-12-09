@@ -54,6 +54,9 @@ module.exports = {
 
     // Näytä dropdown aihevalinnalla
     async showTicketMenu(interaction) {
+        // Deferataan interaction, jotta Discord ei näe sitä vanhaksi
+        await interaction.deferReply({ ephemeral: true });
+
         const menu = new StringSelectMenuBuilder()
             .setCustomId("ticket_select")
             .setPlaceholder("Valitse ticketin aihe")
@@ -66,8 +69,7 @@ module.exports = {
 
         const row = new ActionRowBuilder().addComponents(menu);
 
-        // Lähetä ephemeral-viesti valikolla
-        await interaction.reply({ content: "Valitse aihe:", components: [row], ephemeral: true });
+        await interaction.editReply({ content: "Valitse aihe:", components: [row] });
     },
 
     // Luo ticket-kanava ja poista dropdown ephemeral-viestistä
@@ -75,6 +77,9 @@ module.exports = {
         const guild = interaction.guild;
         const user = interaction.user;
         const selected = interaction.values[0];
+
+        // Poistetaan ephemeral-dropdown heti
+        await interaction.update({ content: `Ticket luotu: ${selected}`, components: [] });
 
         // Luo kanava
         const channel = await guild.channels.create({
@@ -105,9 +110,6 @@ module.exports = {
         const row = new ActionRowBuilder().addComponents(closeButton);
 
         await channel.send({ content: `<@${user.id}>`, embeds: [embed], components: [row] });
-
-        // Poista ephemeral-valikko viestistä ja lähetä vahvistus
-        await interaction.update({ content: `Ticket luotu: ${channel}`, components: [] });
     },
 
     // Sulje ticket ja arkistoi
