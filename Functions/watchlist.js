@@ -1,5 +1,6 @@
+const path = require("path");
 const { EmbedBuilder } = require("discord.js");
-const config = require("../config.json");
+const config = require(path.resolve(__dirname, "../config.json")); // varma polku
 
 module.exports = (client) => {
 
