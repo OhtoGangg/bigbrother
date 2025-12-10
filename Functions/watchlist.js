@@ -23,12 +23,14 @@ module.exports = (client) => {
                 .setDescription("Jäsen vastaa mustalla listalla olevaa tietoa")
                 .addFields(
                     { name: "👤 Käyttäjä:", value: `${member.user.tag} (ID: ${member.id})` },
-                    { name: "🔍 Nimi löytyy listasta:", value: matchedWord }
+                    { name: "🔍 Merkintä watchlistilta:", value: matchedWord }
                 )
                 .setThumbnail(member.user.displayAvatarURL())
                 .setTimestamp();
 
             await channel.send({ embeds: [embed] });
+
+            console.log(`ALERT lähetetty: ${member.user.tag} vastaa merkintää "${matchedWord}"`);
         } catch (err) {
             console.error("Error viestin lähetyksessä:", err);
         }
@@ -39,14 +41,14 @@ module.exports = (client) => {
         if (!member || !member.user) return;
 
         const username = member.user.username.toLowerCase();
-        const tag = member.user.tag.toLowerCase();
         const id = member.id.toString();
 
         for (const entry of watchlist) {
             const key = `${id}-${entry}`;
             if (alreadyAlerted.has(key)) continue;
 
-            if (entry === id || entry === username || entry === tag) {
+            // Täsmälleen sama ID tai käyttäjänimi
+            if (entry === id || entry === username) {
                 await sendAlert(member, entry);
                 alreadyAlerted.add(key);
             }
@@ -60,15 +62,18 @@ module.exports = (client) => {
             if (!channel) return console.warn("Watchlist channel not found!");
 
             const messages = await channel.messages.fetch({ limit: 100 });
-            console.log("Fetched watchlist messages:", messages.size);
+            console.log(`Fetched ${messages.size} watchlist-viestiä.`);
 
             watchlist.clear();
             for (const msg of messages.values()) {
-                const cleaned = msg.content.trim().toLowerCase().replace(/\s+/g, " ");
-                if (cleaned.length > 0) watchlist.add(cleaned);
+                const cleaned = msg.content.trim().toLowerCase();
+                if (cleaned.length > 0) {
+                    watchlist.add(cleaned);
+                    console.log(`Watchlistiin lisätty merkintä: "${cleaned}"`);
+                }
             }
 
-            console.log("Watchlist päivitetty:", watchlist.size, "merkintää");
+            console.log(`Watchlist päivitetty: ${watchlist.size} merkintää`);
 
             // Käydään läpi kaikki jo olemassa olevat jäsenet
             if (guildCache) {
@@ -83,12 +88,14 @@ module.exports = (client) => {
     async function addWatchlistEntry(entry) {
         if (!entry || entry.trim().length === 0) return;
 
-        const cleaned = entry.trim().toLowerCase().replace(/\s+/g, " ");
-        watchlist.add(cleaned);
-        console.log(`Uusi watchlist-merkintä: "${cleaned}"`);
+        const cleaned = entry.trim().toLowerCase();
+        if (!watchlist.has(cleaned)) {
+            watchlist.add(cleaned);
+            console.log(`Uusi watchlist-merkintä lisätty: "${cleaned}"`);
 
-        if (guildCache) {
-            guildCache.members.cache.forEach(member => checkMemberAgainstWatchlist(member));
+            if (guildCache) {
+                guildCache.members.cache.forEach(member => checkMemberAgainstWatchlist(member));
+            }
         }
     }
 
