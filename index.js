@@ -58,11 +58,6 @@ process.on('uncaughtException', (error) => {
 const ticket = require('./Functions/ticket');
 
 // -----------------------------
-// WATCHLIST
-// -----------------------------
-require('./Functions/watchlist')(client);
-
-// -----------------------------
 // EVENT HANDLER
 // -----------------------------
 const { loadEvents } = require('./Handlers/eventHandler');
@@ -74,25 +69,46 @@ loadEvents(client);
 client.once("ready", async () => {
     console.log(`Logged in as ${client.user.tag}`);
 
-    // Lähetä ticket-panel tarvittaessa
-    const guild = await client.guilds.fetch(config.guildID);
-    await guild.members.fetch();
+    try {
+        // --- Hae guild ja jäsenet ---
+        const guild = await client.guilds.fetch(config.guildID);
+        await guild.members.fetch();
 
-    const channel = await guild.channels.fetch(config.channels.ticketsChannel);
-    await ticket.sendTicketPanel(channel);
+        // --- Lähetä ticket-panel ---
+        const channel = await guild.channels.fetch(config.channels.ticketsChannel);
+        await ticket.sendTicketPanel(channel);
+        console.log("Ticket-panel lähetetty kanavalle.");
 
-    console.log("Ticket-panel lähetetty kanavalle.");
+        // --- Käynnistä watchlist vasta ticketin jälkeen ---
+        try {
+            require('./Functions/watchlist')(client);
+            console.log("Watchlist moduuli käynnistetty ready-eventissä");
+        } catch (err) {
+            console.error("Watchlist-moduulin käynnistys epäonnistui:", err);
+        }
+
+    } catch (err) {
+        console.error("Virhe ready-eventissä:", err);
+    }
 });
 
 // -----------------------------
 // BOT EVENTS
 // -----------------------------
 client.on("messageCreate", async (message) => {
-    await ticket.handleInteraction(message);
+    try {
+        await ticket.handleInteraction(message);
+    } catch (err) {
+        console.error("Error handleInteraction (messageCreate):", err);
+    }
 });
 
 client.on('interactionCreate', async (interaction) => {
-    await ticket.handleInteraction(interaction);
+    try {
+        await ticket.handleInteraction(interaction);
+    } catch (err) {
+        console.error("Error handleInteraction (interactionCreate):", err);
+    }
 });
 
 // -----------------------------
