@@ -1,10 +1,11 @@
 const { EmbedBuilder } = require("discord.js");
+const config = require("../config.json");
 
 module.exports = (client) => {
 
-    const WATCHLIST_CHANNEL_ID = process.env.WATCHLIST_CHANNEL_ID;
-    const ALERT_CHANNEL_ID = process.env.ALERT_CHANNEL_ID;
-    const GUILD_ID = process.env.GUILD_ID;
+    const WATCHLIST_CHANNEL_ID = config.channels.watchlistChannel;
+    const ALERT_CHANNEL_ID = config.channels.alertChannel;
+    const GUILD_ID = config.guildID;
 
     let watchlist = new Set();
     let alreadyAlerted = new Set();
@@ -78,10 +79,8 @@ module.exports = (client) => {
     return {
         scanWatchlist,
         checkMemberAgainstWatchlist,
-
         getGuildCache: () => guildCache,
         setGuildCache: (g) => guildCache = g,
-
         addWatchlistEntry: (entry) => watchlist.add(entry)
     };
 };
