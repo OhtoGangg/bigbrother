@@ -1,3 +1,4 @@
+
 const path = require('path');
 const config = require(path.resolve(__dirname, "../config.json"));
 const { EmbedBuilder } = require('discord.js');
@@ -17,7 +18,7 @@ module.exports = (client) => {
         try {
             const channel = await client.channels.fetch(ALERT_CHANNEL_ID);
             const embed = new EmbedBuilder()
-                .setTitle("📢 BINGO!")
+                .setTitle("📢 Watchlist BINGO!")
                 .setColor(0xFF0000)
                 .setDescription("Jäsen vastaa mustalla listalla olevaa tietoa")
                 .addFields(
@@ -26,10 +27,11 @@ module.exports = (client) => {
                 )
                 .setThumbnail(member.user.displayAvatarURL())
                 .setTimestamp();
+
             await channel.send({ embeds: [embed] });
-            console.log(`⚠️ Alert lähetetty: ${member.user.tag} -> "${matchedWord}"`);
+            console.log(`🚨 Alertti lähetetty: ${member.user.tag} -> ${matchedWord}`);
         } catch (err) {
-            console.error("Error viestin lähetyksessä:", err);
+            console.error("❌ Error viestin lähetyksessä:", err);
         }
     }
 
@@ -39,9 +41,11 @@ module.exports = (client) => {
         const username = member.user.username.toLowerCase();
         const tag = member.user.tag.toLowerCase();
         const id = member.id;
+
         for (const entry of watchlist) {
             const key = `${id}-${entry}`;
             if (alreadyAlerted.has(key)) continue;
+
             if (entry.includes(id) || entry.includes(username) || entry.includes(tag)) {
                 await sendAlert(member, entry);
                 alreadyAlerted.add(key);
@@ -56,47 +60,51 @@ module.exports = (client) => {
             if (!channel) return;
             const messages = await channel.messages.fetch({ limit: 100 });
             watchlist.clear();
+
             for (const msg of messages.values()) {
                 const cleaned = msg.content.trim().toLowerCase().replace(/\s+/g, " ");
                 if (cleaned.length > 0) watchlist.add(cleaned);
             }
-            console.log(`📜 Watchlist päivitetty: ${watchlist.size} merkintää`);
+
+            console.log(`👁️ Watchlist päivitetty: ${watchlist.size} merkintää`);
         } catch (err) {
-            console.error("Error scanning watchlist:", err);
+            console.error("❌ Error scanning watchlist:", err);
         }
     }
 
-    // --- Aloita tarkkailu (käynnistysfunktio) ---
+    // --- Käynnistä watchlist ---
     async function startWatching() {
         console.log("👁️ Aloitetaan tarkkailu, isoveli valvoo...");
 
-        // Hae guild
         guildCache = await client.guilds.fetch(GUILD_ID);
         await guildCache.members.fetch();
 
-        // Skannaa watchlist alkuun
+        // Skannaa ensin kanava
         await scanWatchlist();
 
-        // Käy läpi kaikki jäsenet käynnistyksessä
+        // Tarkista kaikki jäsenet watchlistia vastaan
         guildCache.members.cache.forEach(member => checkMemberAgainstWatchlist(member));
 
-        // --- Event: uusi jäsen ---
+        // Event: uusi jäsen
         client.on("guildMemberAdd", async (member) => {
             await checkMemberAgainstWatchlist(member);
         });
 
-        // --- Event: uusi viesti watchlist-kanavalla ---
+        // Event: uusi viesti watchlist-kanavalla
         client.on("messageCreate", async (message) => {
             if (message.channel.id !== WATCHLIST_CHANNEL_ID || message.author.bot) return;
+
             const cleaned = message.content.trim().toLowerCase().replace(/\s+/g, " ");
             if (cleaned.length === 0) return;
+
             watchlist.add(cleaned);
-            console.log(`🆕 Uusi watchlist-merkintä: "${cleaned}"`);
+            console.log(`➕ Uusi watchlist-merkintä lisätty: "${cleaned}"`);
+
+            // Tarkista kaikki jäsenet heti
             guildCache.members.cache.forEach(member => checkMemberAgainstWatchlist(member));
         });
     }
 
-    // --- Exportataan ---
     return {
         startWatching,
         scanWatchlist,
