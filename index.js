@@ -52,13 +52,12 @@ process.on('uncaughtException', (error) => {
 });
 
 // -----------------------------
-// WATCHLIST & TICKET
+// TICKET
 // -----------------------------
-const watchlist = require('./Functions/watchlist'); // ← EI SULKUJA
 const ticket = require('./Functions/ticket');
 
 // -----------------------------
-// EVENTIT
+// EVENT HANDLER
 // -----------------------------
 const { loadEvents } = require('./Handlers/eventHandler');
 loadEvents(client);
@@ -69,31 +68,20 @@ loadEvents(client);
 client.once("ready", async () => {
     console.log(`Logged in as ${client.user.tag}`);
 
+    // Lähetä ticket-panel tarvittaessa
     const guild = await client.guilds.fetch(config.guildID);
     await guild.members.fetch();
 
-    watchlist.setGuildCache(guild);
-    console.log("Guild jäsenten cache haettu.");
+    const channel = await guild.channels.fetch(config.channels.ticketsChannel);
+    await ticket.sendTicketPanel(channel);
 
-    await watchlist.scanWatchlist(client);
-    console.log("Watchlist skannattu.");
-
-    guild.members.cache.forEach(member =>
-        watchlist.checkMemberAgainstWatchlist(client, member)
-    );
-
-    console.log("Watchlist tarkistus valmis.");
+    console.log("Ticket-panel lähetetty kanavalle.");
 });
 
 // -----------------------------
-// EVENTIT
+// BOT EVENTS
 // -----------------------------
-client.on("guildMemberAdd", async (member) => {
-    await watchlist.checkMemberAgainstWatchlist(client, member);
-});
-
 client.on("messageCreate", async (message) => {
-    await watchlist.handleNewWatchlistMessage(client, message);
     await ticket.handleInteraction(message);
 });
 
