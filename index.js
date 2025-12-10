@@ -56,12 +56,12 @@ process.on('uncaughtException', (error) => {
 // LADATAAN WATCHLIST
 // -----------------------------
 // Render ja Node ovat case-sensitive → kansio pienellä
-const watchlist = require('./functions/watchlist')(client);
+const watchlist = require('./Functions/watchlist')(client);
 
 // -----------------------------
 // LADATAAN EVENTIT
 // -----------------------------
-const { loadEvents } = require('./handlers/eventHandler');
+const { loadEvents } = require('./Handlers/eventHandler');
 loadEvents(client);
 
 // -----------------------------
