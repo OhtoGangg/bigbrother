@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const path = require('path');
 const { Client, GatewayIntentBits, Partials, Collection } = require('discord.js');
 const config = require('./config.json');
 
@@ -55,6 +56,11 @@ process.on('uncaughtException', (error) => {
 // TICKET
 // -----------------------------
 const ticket = require('./Functions/ticket');
+
+// -----------------------------
+// WATCHLIST
+// -----------------------------
+require('./Functions/watchlist')(client);
 
 // -----------------------------
 // EVENT HANDLER
