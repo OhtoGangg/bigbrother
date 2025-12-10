@@ -77,6 +77,7 @@ client.once("ready", async () => {
     await guild.members.fetch();
     watchlist.setGuildCache(guild);
 
+    // Tarkistetaan watchlist kaikille jäsenille käynnistyksen yhteydessä
     guild.members.cache.forEach(member => watchlist.checkMemberAgainstWatchlist(member));
 });
 
@@ -97,6 +98,7 @@ client.on("messageCreate", async (message) => {
     watchlist.addWatchlistEntry(cleaned);
     console.log(`Uusi watchlist-merkintä: "${cleaned}"`);
 
+    // Käydään läpi kaikki guildin jäsenet watchlistin tarkistamiseksi
     watchlist.getGuildCache()?.members.cache.forEach(member => watchlist.checkMemberAgainstWatchlist(member));
 });
 
