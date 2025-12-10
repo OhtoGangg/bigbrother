@@ -1,7 +1,8 @@
 require('dotenv').config();
 const express = require('express');
 const { Client, GatewayIntentBits, Partials, Collection } = require('discord.js');
-const config = require('./config.json'); // oikea polku index.js:stä
+const path = require('path');
+const config = require('./config.json'); // suhteellinen polku index.js:stä
 
 // -----------------------------
 // EXPRESS KEEP-ALIVE
@@ -54,12 +55,13 @@ process.on('uncaughtException', (error) => {
 // -----------------------------
 // LADATAAN WATCHLIST
 // -----------------------------
-const watchlist = require('./Functions/watchlist')(client);
+// Render ja Node ovat case-sensitive → kansio pienellä
+const watchlist = require('./functions/watchlist')(client);
 
 // -----------------------------
 // LADATAAN EVENTIT
 // -----------------------------
-const { loadEvents } = require('./Handlers/eventHandler'); 
+const { loadEvents } = require('./handlers/eventHandler');
 loadEvents(client);
 
 // -----------------------------
@@ -68,15 +70,19 @@ loadEvents(client);
 client.once("ready", async () => {
     console.log(`Logged in as ${client.user.tag}`);
 
+    // Päivitetään watchlist ennen tarkistusta
     if (watchlist && typeof watchlist.scanWatchlist === "function") {
         await watchlist.scanWatchlist();
     }
 
+    // Hae guild ja jäsenten cache
     const guild = await client.guilds.fetch(config.guildID);
     await guild.members.fetch();
     watchlist.setGuildCache(guild);
 
-    // Tarkistetaan watchlist kaikille jäsenille
+    console.log("Tarkistetaan watchlist kaikille jäsenille käynnistyksen yhteydessä...");
+
+    // Käydään läpi kaikki jäsenet
     guild.members.cache.forEach(member => watchlist.checkMemberAgainstWatchlist(member));
 });
 
@@ -84,6 +90,7 @@ client.once("ready", async () => {
 // BOT EVENTIT
 // -----------------------------
 client.on("guildMemberAdd", async (member) => {
+    console.log(`Uusi jäsen: ${member.user.tag} - tarkistetaan watchlist...`);
     await watchlist.checkMemberAgainstWatchlist(member);
 });
 
@@ -94,10 +101,13 @@ client.on("messageCreate", async (message) => {
     const cleaned = message.content.trim().toLowerCase().replace(/\s+/g, " ");
     if (cleaned.length === 0) return;
 
+    console.log(`Uusi watchlist-merkintä kanavasta: "${cleaned}"`);
     watchlist.addWatchlistEntry(cleaned);
-    console.log(`Uusi watchlist-merkintä: "${cleaned}"`);
 
-    watchlist.getGuildCache()?.members.cache.forEach(member => watchlist.checkMemberAgainstWatchlist(member));
+    watchlist.getGuildCache()?.members.cache.forEach(member => {
+        console.log(`Tarkistetaan ${member.user.tag} watchlistia vasten`);
+        watchlist.checkMemberAgainstWatchlist(member);
+    });
 });
 
 // -----------------------------
