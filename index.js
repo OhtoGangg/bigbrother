@@ -1,25 +1,20 @@
 require('dotenv').config();
 const express = require('express');
-const { 
-    Client, 
-    GatewayIntentBits, 
-    Partials, 
-    Collection, 
-    EmbedBuilder 
-} = require('discord.js');
+const path = require('path');
+const { Client, GatewayIntentBits, Partials, Collection } = require('discord.js');
+const { loadEvents } = require("./handlers/eventHandler");
 
-// CONFIG
-const config = require('./config.json');
-const GUILD_ID = config.guildID;
-
+// -----------------------------
 // EXPRESS KEEP-ALIVE
+// -----------------------------
 const PORT = process.env.PORT || 10000;
 const app = express();
-
 app.get('/', (req, res) => res.send('✅ Big Brother bot running!'));
 app.listen(PORT, () => console.log(`🌐 HTTP server alive on port ${PORT}`));
 
+// -----------------------------
 // LUODAAN CLIENT
+// -----------------------------
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -41,10 +36,9 @@ const client = new Client({
     ]
 });
 
-// EXPORT (jos joku tarvitsee clientin)
-module.exports = client;
-
+// -----------------------------
 // COLLECTIONS
+// -----------------------------
 client.events = new Collection();
 client.commands = new Collection();
 
@@ -58,14 +52,19 @@ process.on('uncaughtException', (error) => {
     console.error('Unhandled Exception:', error);
 });
 
-// LADATAAN WATCHLIST (client annetaan parametrina)
-const watchlist = require("./functions/watchlist")(client);
+// -----------------------------
+// LADATAAN WATCHLIST
+// -----------------------------
+const watchlist = require(path.resolve(__dirname, "functions/watchlist"))(client);
 
+// -----------------------------
 // LADATAAN EVENTIT
-const { loadEvents } = require("./handlers/eventHandler");
+// -----------------------------
 loadEvents(client);
 
-
+// -----------------------------
+// BOT READY
+// -----------------------------
 client.once("ready", async () => {
     console.log(`Logged in as ${client.user.tag}`);
 
@@ -74,9 +73,34 @@ client.once("ready", async () => {
     }
 
     // Haetaan guild ja jäsenet cacheen
-    const guildCache = await client.guilds.fetch(GUILD_ID);
+    const guildCache = await client.guilds.fetch(process.env.GUILD_ID);
     await guildCache.members.fetch();
+    watchlist.setGuildCache(guildCache);
+
+    // Käydään läpi kaikki jäsenet käynnistyksessä
+    guildCache.members.cache.forEach(member => watchlist.checkMemberAgainstWatchlist(member));
 });
 
+// -----------------------------
+// BOT EVENTIT
+// -----------------------------
+client.on("guildMemberAdd", async (member) => {
+    await watchlist.checkMemberAgainstWatchlist(member);
+});
+
+client.on("messageCreate", async (message) => {
+    if (message.channel.id !== process.env.WATCHLIST_CHANNEL_ID || message.author.bot) return;
+    const cleaned = message.content.trim().toLowerCase().replace(/\s+/g, " ");
+    if (cleaned.length === 0) return;
+
+    watchlist.addWatchlistEntry(cleaned);
+    console.log(`Uusi watchlist-merkintä: "${cleaned}"`);
+
+    // Käydään läpi kaikki jäsenet ilman fetchiä
+    watchlist.getGuildCache()?.members.cache.forEach(member => watchlist.checkMemberAgainstWatchlist(member));
+});
+
+// -----------------------------
 // BOT LOGIN
+// -----------------------------
 client.login(process.env.TOKEN);
