@@ -33,7 +33,7 @@ async function sendAlert(client, member, matchedWord) {
     }
 }
 
-// 👁 Tarkistaa yhden jäsenen watchlistia vasten
+// 👁 Tarkistaa jäsenen watchlistia vasten
 async function checkMemberAgainstWatchlist(client, member) {
     if (!member || !member.user) return;
 
@@ -51,29 +51,24 @@ async function checkMemberAgainstWatchlist(client, member) {
     }
 }
 
-// 📌 Päivittää watchlistin kanavasta
+// 📌 Skannaa watchlist-kanavan
 async function scanWatchlist(client) {
     try {
         const channel = await client.channels.fetch(WATCHLIST_CHANNEL_ID);
         if (!channel) return console.warn("Watchlist channel not found!");
 
         const messages = await channel.messages.fetch({ limit: 100 });
-        console.log(`Watchlist kanavalta haettu ${messages.size} viestiä`);
 
         watchlist.clear();
         alreadyAlerted.clear();
 
         for (const msg of messages.values()) {
             const cleaned = msg.content.trim().toLowerCase();
-            if (cleaned.length > 0) {
-                watchlist.add(cleaned);
-                console.log(`Watchlist merkintä lisätty cacheen: "${cleaned}"`);
-            }
+            if (cleaned.length > 0) watchlist.add(cleaned);
         }
 
         console.log(`Watchlist päivitetty: ${watchlist.size} merkintää`);
 
-        // Tarkista olemassa olevat jäsenet
         if (guildCache) {
             guildCache.members.cache.forEach(member =>
                 checkMemberAgainstWatchlist(client, member)
@@ -84,7 +79,7 @@ async function scanWatchlist(client) {
     }
 }
 
-// 📝 Uusi/editoitu viesti watchlist-kanavalla
+// 📝 Käsittele uudet viestit watchlist-kanavalla
 async function handleNewWatchlistMessage(client, message) {
     if (message.channel.id !== WATCHLIST_CHANNEL_ID || message.author.bot) return;
 
@@ -95,7 +90,6 @@ async function handleNewWatchlistMessage(client, message) {
     watchlist.add(cleaned);
     console.log(`Uusi watchlist merkintä lisätty: "${cleaned}"`);
 
-    // Tarkista kaikki jäsenet
     if (guildCache) {
         guildCache.members.cache.forEach(member =>
             checkMemberAgainstWatchlist(client, member)
