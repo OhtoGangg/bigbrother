@@ -1,8 +1,7 @@
 require('dotenv').config();
 const express = require('express');
-const path = require('path');
 const { Client, GatewayIntentBits, Partials, Collection } = require('discord.js');
-const config = require(path.resolve(__dirname, "config.json"));
+const config = require('./config.json'); // polku suhteessa index.js
 
 // -----------------------------
 // EXPRESS KEEP-ALIVE
@@ -55,12 +54,12 @@ process.on('uncaughtException', (error) => {
 // -----------------------------
 // LADATAAN WATCHLIST
 // -----------------------------
-const watchlist = require(path.resolve(__dirname, "functions/watchlist"))(client);
+const watchlist = require('./functions/watchlist')(client); // korjattu polku
 
 // -----------------------------
 // LADATAAN EVENTIT
 // -----------------------------
-const { loadEvents } = require(path.resolve(__dirname, "handlers/eventHandler"));
+const { loadEvents } = require('./handlers/eventHandler'); // korjattu polku
 loadEvents(client);
 
 // -----------------------------
@@ -77,7 +76,6 @@ client.once("ready", async () => {
     await guild.members.fetch();
     watchlist.setGuildCache(guild);
 
-    // Tarkistetaan watchlist kaikille jäsenille käynnistyksen yhteydessä
     guild.members.cache.forEach(member => watchlist.checkMemberAgainstWatchlist(member));
 });
 
@@ -98,7 +96,6 @@ client.on("messageCreate", async (message) => {
     watchlist.addWatchlistEntry(cleaned);
     console.log(`Uusi watchlist-merkintä: "${cleaned}"`);
 
-    // Käydään läpi kaikki guildin jäsenet watchlistin tarkistamiseksi
     watchlist.getGuildCache()?.members.cache.forEach(member => watchlist.checkMemberAgainstWatchlist(member));
 });
 
