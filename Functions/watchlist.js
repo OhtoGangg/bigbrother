@@ -15,6 +15,8 @@ module.exports = (client) => {
     async function sendAlert(member, matchedWord) {
         try {
             const channel = await client.channels.fetch(ALERT_CHANNEL_ID);
+            if (!channel) return console.warn("Alert channel not found!");
+
             const embed = new EmbedBuilder()
                 .setTitle("📢 BINGO!")
                 .setColor(0xFF0000)
@@ -38,7 +40,7 @@ module.exports = (client) => {
 
         const username = member.user.username.toLowerCase();
         const tag = member.user.tag.toLowerCase();
-        const id = member.id;
+        const id = member.id.toString();
 
         for (const entry of watchlist) {
             const key = `${id}-${entry}`;
@@ -55,9 +57,10 @@ module.exports = (client) => {
     async function scanWatchlist() {
         try {
             const channel = await client.channels.fetch(WATCHLIST_CHANNEL_ID);
-            if (!channel) return;
+            if (!channel) return console.warn("Watchlist channel not found!");
 
             const messages = await channel.messages.fetch({ limit: 100 });
+            console.log("Fetched watchlist messages:", messages.size);
 
             watchlist.clear();
             for (const msg of messages.values()) {
