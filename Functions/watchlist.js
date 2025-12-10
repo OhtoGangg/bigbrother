@@ -1,9 +1,8 @@
 const path = require("path");
 const { EmbedBuilder } = require("discord.js");
-const config = require(path.resolve(__dirname, "../config.json")); // varma polku
+const config = require(path.resolve(__dirname, "../config.json"));
 
 module.exports = (client) => {
-
     const WATCHLIST_CHANNEL_ID = config.channels.watchlistChannel;
     const ALERT_CHANNEL_ID = config.channels.alertChannel;
     const GUILD_ID = config.guildID;
@@ -16,7 +15,6 @@ module.exports = (client) => {
     async function sendAlert(member, matchedWord) {
         try {
             const channel = await client.channels.fetch(ALERT_CHANNEL_ID);
-
             const embed = new EmbedBuilder()
                 .setTitle("📢 BINGO!")
                 .setColor(0xFF0000)
@@ -46,11 +44,7 @@ module.exports = (client) => {
             const key = `${id}-${entry}`;
             if (alreadyAlerted.has(key)) continue;
 
-            if (
-                entry.includes(id) ||
-                entry.includes(username) ||
-                entry.includes(tag)
-            ) {
+            if (entry.includes(id) || entry.includes(username) || entry.includes(tag)) {
                 await sendAlert(member, entry);
                 alreadyAlerted.add(key);
             }
