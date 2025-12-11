@@ -17,12 +17,12 @@ module.exports = (client) => {
             if (!alertChannel) return console.error("❌ Alert-kanavaa ei löytynyt!");
 
             const embed = new EmbedBuilder()
-                .setTitle("⚠️ Watchlist-osuma!")
+                .setTitle("🚨 Hälytys!")
                 .setColor(0xFF0000)
-                .setDescription("Jäsen vastaa watchlistissä olevaa tietoa")
+                .setDescription("Jäsen vastaa blacklistillä olevaa tietoa!")
                 .addFields(
                     { name: "👤 Käyttäjä", value: `${member.user.tag} (ID: ${member.id})` },
-                    { name: "🔍 Watchlist-osuma", value: matchedWord }
+                    { name: "📸 Havaittu kohdassa:", value: matchedWord }
                 )
                 .setThumbnail(member.user.displayAvatarURL())
                 .setTimestamp();
@@ -35,7 +35,7 @@ module.exports = (client) => {
         }
     }
 
-    // --- Tarkista jäsen watchlistiä vasten ---
+    // --- Tarkista jäsen blacklistiä vasten ---
     async function checkMemberAgainstWatchlist(member) {
         if (!member?.user) return;
 
@@ -70,15 +70,15 @@ module.exports = (client) => {
                 if (cleaned) watchlist.add(cleaned);
             }
 
-            console.log(`👁️ Watchlist päivitetty: ${watchlist.size} merkintää`);
+            console.log(` Blacklist päivitetty: ${watchlist.size} merkintää`);
         } catch (err) {
             console.error("❌ Error scanning watchlist:", err);
         }
     }
 
-    // --- Käynnistä watchlist-tarkkailu ---
+    // --- Käynnistä blacklist-tarkkailu ---
     async function startWatching() {
-        console.log("👁️ Käynnistetään watchlist-tarkkailu...");
+        console.log("Käynnistetään blacllist-tarkkailu...");
 
         try {
             const guild = await client.guilds.fetch(GUILD_ID);
@@ -95,7 +95,7 @@ module.exports = (client) => {
                 await checkMemberAgainstWatchlist(member);
             });
 
-            // Event: uusi viesti watchlist-kanavalla
+            // Event: uusi viesti blacklist-kanavalla
             client.on("messageCreate", async (message) => {
                 if (message.channel.id !== WATCHLIST_CHANNEL_ID || message.author.bot) return;
 
@@ -103,13 +103,13 @@ module.exports = (client) => {
                 if (!cleaned) return;
 
                 watchlist.add(cleaned);
-                console.log(`➕ Uusi watchlist-merkintä lisätty: "${cleaned}"`);
+                console.log(`➕ Uusi blacklist-merkintä lisätty: "${cleaned}"`);
 
                 // Tarkista heti kaikki jäsenet
                 guild.members.cache.forEach(member => checkMemberAgainstWatchlist(member));
             });
 
-            console.log("✅ Watchlist-tarkkailu käynnistetty!");
+            console.log("✅ Blacklist-tarkkailu käynnistetty!");
         } catch (err) {
             console.error("❌ Watchlist startWatching epäonnistui:", err);
         }
