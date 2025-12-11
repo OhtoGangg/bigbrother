@@ -49,9 +49,10 @@ process.on("unhandledRejection", (reason, promise) => console.error("Unhandled R
 process.on('uncaughtException', (error) => console.error('Unhandled Exception:', error));
 
 // -----------------------------
-// TICKET
+// TICKET & WATCHLIST
 // -----------------------------
 const ticket = require('./Functions/ticket');
+let watchlistModule; // alustetaan täällä, mutta kutsutaan vasta readyssa
 
 // -----------------------------
 // EVENT HANDLER
@@ -63,7 +64,7 @@ loadEvents(client);
 // BOT READY
 // -----------------------------
 client.once("ready", async () => {
-    console.log(`✅ Logged in as ${client.user.tag}`);
+    console.log(`✅ Bot kirjautunut sisään: ${client.user.tag}`);
 
     try {
         // --- Hae guild ja jäsenet ---
@@ -80,9 +81,9 @@ client.once("ready", async () => {
             console.warn("⚠️ Ticket-panel -kanavaa ei löytynyt configista!");
         }
 
-        // --- Käynnistä watchlist vasta ticketin jälkeen ---
+        // --- Käynnistä watchlist MODUULI vasta ticketin jälkeen ---
         try {
-            const watchlistModule = require('./Functions/watchlist')(client);
+            watchlistModule = require('./Functions/watchlist')(client);
             await watchlistModule.startWatching();
             console.log("👁️ Watchlist moduuli käynnistetty - isoveli valvoo!");
         } catch (err) {
