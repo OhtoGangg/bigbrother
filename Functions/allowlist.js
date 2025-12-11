@@ -10,7 +10,6 @@ const {
 const config = require('../config.json');
 
 module.exports = {
-
     // --- Lähetä allowlist panel ---
     async sendAllowlistPanel(channel) {
         const embed = new EmbedBuilder()
@@ -31,13 +30,11 @@ module.exports = {
     // --- Käsittele interaction ---
     async handleInteraction(interaction) {
         try {
-            // --- Button click ---
             if (interaction.isButton() && interaction.customId === 'create_allowlist') {
-                await this.showAllowlistModal(interaction); // deferUpdate poistettu
+                await this.showAllowlistModal(interaction);
                 return;
             }
 
-            // --- Modal submit ---
             if (interaction.isModalSubmit() && interaction.customId === 'allowlist_modal') {
                 await this.handleModalSubmit(interaction);
                 return;
@@ -90,6 +87,7 @@ module.exports = {
         const character = interaction.fields.getTextInputValue('character');
         const free = interaction.fields.getTextInputValue('free');
 
+        // --- Lähetä DM hakijalle ---
         try {
             await interaction.user.send('✅ Hakemuksesi on otettu vastaan. Henkilökunta käsittelee tämän mahdollisimman pian!');
         } catch {}
