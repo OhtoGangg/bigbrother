@@ -52,7 +52,6 @@ process.on('uncaughtException', (error) => console.error('Unhandled Exception:',
 // TICKET & WATCHLIST
 // -----------------------------
 const ticket = require('./Functions/ticket');
-let watchlistModule; // alustetaan täällä, mutta kutsutaan vasta readyssa
 
 // -----------------------------
 // EVENT HANDLER
@@ -73,7 +72,7 @@ client.once("ready", async () => {
         console.log(`📦 Guild haettu: ${guild.name}, jäseniä: ${guild.memberCount}`);
 
         // --- Lähetä ticket-panel ---
-        const ticketChannel = await guild.channels.fetch(config.ticket.ticketPanelChannelId);
+        const ticketChannel = guild.channels.cache.get(config.ticket.ticketPanelChannelId);
         if (ticketChannel) {
             await ticket.sendTicketPanel(ticketChannel);
             console.log("🎫 Ticket-panel lähetetty kanavalle");
@@ -81,9 +80,10 @@ client.once("ready", async () => {
             console.warn("⚠️ Ticket-panel -kanavaa ei löytynyt configista!");
         }
 
-        // --- Käynnistä watchlist MODUULI vasta ticketin jälkeen ---
+        // --- Käynnistä watchlist ---
         try {
-            watchlistModule = require('./Functions/watchlist')(client);
+            const watchlistModule = require('./Functions/watchlist')(client);
+            client.watchlist = watchlistModule;
             await watchlistModule.startWatching();
             console.log("👁️ Watchlist moduuli käynnistetty - isoveli valvoo!");
         } catch (err) {
