@@ -35,6 +35,8 @@ const client = new Client({
     ]
 });
 
+// vittu mulla lahoo pää tän paskan kanssa 
+
 // -----------------------------
 // COLLECTIONS
 // -----------------------------
@@ -112,12 +114,15 @@ client.on("messageCreate", async (message) => {
 
 client.on('interactionCreate', async (interaction) => {
     try {
-        // --- Allowlist button tai modal ---
-        if (
-            (interaction.isButton() && interaction.customId === 'create_allowlist') ||
-            (interaction.isModalSubmit() && interaction.customId === 'allowlist_modal')
-        ) {
-            await allowlist.handleInteraction(interaction);
+        // --- Allowlist button ---
+        if (interaction.isButton() && interaction.customId === 'create_allowlist') {
+            await allowlist.showAllowlistModal(interaction);
+            return;
+        }
+
+        // --- Allowlist modal submit ---
+        if (interaction.isModalSubmit() && interaction.customId === 'allowlist_modal') {
+            await allowlist.handleModalSubmit(interaction);
             return;
         }
 
