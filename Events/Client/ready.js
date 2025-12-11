@@ -7,27 +7,48 @@ module.exports = {
     name: "clientReady",
     once: true,
     async execute(client) {
+        console.log("🔄 Ready event käynnistyy...");
         try {
             // --- Lataa komennot ---
             await loadCommands(client);
-            console.log(`Kirjauduttu sisään: ${client.user.tag}`);
+            console.log(`✅ Kirjauduttu sisään: ${client.user.tag}`);
+
+            // --- Haetaan guild ---
+            let guild;
+            try {
+                guild = await client.guilds.fetch(config.guildID);
+                await guild.members.fetch(); // varmista, että jäsenet ovat cache:ssa
+                console.log(`📦 Guild haettu: ${guild.name}, jäseniä: ${guild.memberCount}`);
+            } catch (err) {
+                console.error("❌ Virhe guildin fetchauksessa:", err);
+                return;
+            }
 
             // --- Lähetä ticket-panel ---
-            const ticketChannel = client.channels.cache.get(config.ticket.ticketPanelChannelId);
-            if (ticketChannel) {
-                await ticket.sendTicketPanel(ticketChannel);
-                console.log("🎫 Ticket-panel lähetetty kanavalle.");
-            } else {
-                console.warn("⚠️ Ticket-panel kanavaa ei löytynyt. Tarkista config.");
+            try {
+                const ticketChannel = await guild.channels.fetch(config.ticket.ticketPanelChannelId);
+                if (ticketChannel) {
+                    await ticket.sendTicketPanel(ticketChannel);
+                    console.log("🎫 Ticket-panel lähetetty kanavalle.");
+                } else {
+                    console.warn("⚠️ Ticket-panel kanavaa ei löytynyt. Tarkista config.");
+                }
+            } catch (err) {
+                console.error("❌ Virhe ticket-panelin lähetyksessä:", err);
             }
 
             // --- Lähetä allowlist-panel ---
-            const allowlistChannel = client.channels.cache.get(config.channels.haeAllowlistChannel);
-            if (allowlistChannel) {
-                await allowlist.sendAllowlistPanel(allowlistChannel);
-                console.log("📨 Allowlist-panel lähetetty kanavalle.");
-            } else {
-                console.warn("⚠️ Allowlist-panel kanavaa ei löytynyt. Tarkista config.");
+            try {
+                const allowlistChannel = await guild.channels.fetch(config.channels.haeAllowlistChannel);
+                if (allowlistChannel) {
+                    console.log("👀 Allowlist-kanava löytyi, lähetetään panel...");
+                    await allowlist.sendAllowlistPanel(allowlistChannel);
+                    console.log("📨 Allowlist-panel lähetetty kanavalle.");
+                } else {
+                    console.warn("⚠️ Allowlist-panel kanavaa ei löytynyt. Tarkista config.");
+                }
+            } catch (err) {
+                console.error("❌ Virhe allowlist-panelin lähetyksessä:", err);
             }
 
             // --- Käynnistä watchlist ---
@@ -41,7 +62,7 @@ module.exports = {
             }
 
         } catch (error) {
-            console.error("❌ Error loading commands:", error);
+            console.error("❌ Error ready eventissä:", error);
         }
     }
 };
