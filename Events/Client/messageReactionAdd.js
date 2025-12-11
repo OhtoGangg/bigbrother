@@ -1,32 +1,75 @@
-const { Events } = require("discord.js")
-const config = require("../../config.json")
+const { Events } = require("discord.js");
+const config = require("../../config.json");
 
 module.exports = {
-    name: Events.MessageReactionAdd, // Tää on sama asia kuin messageReactionAdd, verrattavissa yllä olevaan esimerkkiin¨
+    name: Events.MessageReactionAdd,
     /**
-     *Tää kommentointikenttä on kans täysin vapaaehtonen, ainoo mitä tää hyödyttää on että koodieditori saattaa
-     *ymmärtää paremmin mitä reaction sana tarkottaa ja antaa koodiehdotuksia
-     *
-     *@param {Events.MessageReactionAdd} reaction
+     * @param {MessageReaction} reaction 
+     * @param {User} user
      */
-async execute(reaction) {
-       if (interaction.message.channel !== config.channel.allowlistChannel) return
-       /*Nyt jos reaktio ei oo configissa mainitulla allowlistChannel kanavalla, mitään ei tapahtu*/
+    async execute(reaction, user) {
+        // --- Älä reagoi botin omiin reaktioihin ---
+        if (user.bot) return;
+
+        // --- Hae täydellinen viesti jos partial ---
+        if (reaction.partial) {
+            try {
+                await reaction.fetch();
+            } catch (err) {
+                console.error("Error fetching reaction:", err);
+                return;
+            }
+        }
+
+        const channelId = reaction.message.channel.id;
+
+        // --- Tarkistetaan, että reaktio tulee allowlistChannelista ---
+        if (channelId !== config.channels.allowlistChannel) return;
+
+        // --- Määritä emoji ---
+        const upvote = "👍";
+        const downvote = "👎";
+
+        const upvotecount = reaction.message.reactions.cache.get(upvote)?.count - 1 || 0;
+        const downvotecount = reaction.message.reactions.cache.get(downvote)?.count - 1 || 0;
+        const totalvotecount = upvotecount + downvotecount;
+
+        // --- Päätös, kun äänestykset täyttävät ehdot (esim. vähintään 3 ääntä) ---
+        if (totalvotecount >= 3) {
+            const guild = reaction.message.guild;
+            const embed = reaction.message.embeds[0];
+
+            if (!embed || !embed.footer) return console.warn("⚠️ Viestissä ei embedia tai footeria");
+
+            // Hae hakijan ID footerista
+            const applicantId = embed.footer.text.split("Hakija: ")[1];
+            const applicant = guild.members.cache.get(applicantId);
+
+            if (!applicant) return console.warn("⚠️ Hakijaa ei löytynyt guildista");
+
+            if (upvotecount > downvotecount) {
+                // --- Hyväksy ---
+                const hyvaksytyt = guild.channels.cache.get(config.channels.hyvaksytytChannel);
+                if (hyvaksytyt) await hyvaksytyt.send({ embeds: [embed] });
+
+                try {
+                    await applicant.send("🎉 Onnittelut, hakemuksesi on hyväksytty! Seuraavaksi pääset odottamaan haastattelua.");
+                } catch {}
+
+                const role = guild.roles.cache.get(config.roles.roleAlHaastattelu);
+                if (role) await applicant.roles.add(role);
+            } else {
+                // --- Hylkää ---
+                const hylatyt = guild.channels.cache.get(config.channels.hylatytChannel);
+                if (hylatyt) await hylatyt.send({ embeds: [embed] });
+
+                try {
+                    await applicant.send("❌ Pahoittelut, tällä kertaa arpaonni ei suosinut sinua. Älä lannistu, aina voi hakea uutta!");
+                } catch {}
+            }
+
+            // --- Poista alkuperäinen viesti allowlistChannelista ---
+            await reaction.message.delete().catch(() => {});
+        }
     }
-}
-
-/*Täällä määritä emojit mitä käytetään reagoimiseen*/
-const upvote = ":heavy_plus_sign"
-const downvote = ":heavy_minus_sign:"
-
-/*Näin saadaan, että kuinka paljon on ääniä kyseisessä viestissä*/
-const upvotecount = interaction.message.reactions.cache.get(upvote).count/*Täällä haetaan reagoidun viestin upvote reagointien määrä*/
-const downvotecount = interaction.message.reactions.cache.get(downvote).count/*Sama kuin äsken mutta downote reagointien määrä*/
-const totalvotecount = upvotecount + downvotecount/*Äänet yhteensä*/
-
-/*SITTEN SE LOGIIKKA - Jos haluaa esimerkiks että kun ääniä on x määrä tai jos upvoteja tulee tietty määrä*/
-if (totalvotecount === 3) {
-  /*Tämä tapahtuu jos ääniä on yhteensä 10*/
-  if (upvotecount < 2) {/*10 yhteisäänestä jos upvoteja on alle 5, äänestys hylätään näiden sulkujen sisällä*/}
-  else {/*Täällä käsitellään jos upvoteja on 5 tai enemmän, jolloin äänestys vois olla esim hyväksytty*/}
-}
+};
