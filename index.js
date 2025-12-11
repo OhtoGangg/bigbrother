@@ -126,23 +126,30 @@ client.once("ready", async () => {
 // Interactiot 
 
 client.on('interactionCreate', async (interaction) => {
-    console.log("Nyt tapahtu jotain"); // <-- debug log
-
+    console.log("Nyt tapahtu jotain") // <------------------- Lisää tohon logi
     try {
         // --- Allowlist napin painallus ---
         if (interaction.isButton() && interaction.customId === 'create_allowlist') {
-            console.log("Nyt avataan allowlist modali!");
             await allowlist.showAllowlistModal(interaction);
             return;
         }
 
-// Allowlisti moduulijutut
-        
+        // --- Allowlist modal submit ---
         if (interaction.isModalSubmit() && interaction.customId === 'allowlist_modal') {
-            console.log("Allowlist modal submit käsitellään...");
             await allowlist.handleModalSubmit(interaction);
             return;
         }
+
+        // --- Muut ticket interactions ---
+        await ticket.handleInteraction(interaction);
+
+    } catch (err) {
+        console.error("Error handleInteraction (interactionCreate):", err);
+        if (!interaction.replied && !interaction.deferred) {
+            await interaction.reply({ content: '❌ Tapahtui virhe interaktiossa.', ephemeral: true });
+        }
+    }
+});
 
 // Tikettien toiminnot
         await ticket.handleInteraction(interaction);
