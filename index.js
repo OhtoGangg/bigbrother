@@ -1,6 +1,5 @@
 require('dotenv').config();
 const express = require('express');
-const path = require('path');
 const { Client, GatewayIntentBits, Partials, Collection } = require('discord.js');
 const config = require('./config.json');
 
@@ -67,12 +66,11 @@ client.once("ready", async () => {
     console.log(`✅ Bot kirjautunut sisään: ${client.user.tag}`);
 
     try {
-        // --- Hae guild ja jäsenet ---
         const guild = await client.guilds.fetch(config.guildID);
         await guild.members.fetch();
         console.log(`📦 Guild haettu: ${guild.name}, jäseniä: ${guild.memberCount}`);
 
-        // --- Lähetä ticket-panel ---
+        // --- Ticket-panel ---
         const ticketChannel = guild.channels.cache.get(config.ticket.ticketPanelChannelId);
         if (ticketChannel) {
             await ticket.sendTicketPanel(ticketChannel);
@@ -81,7 +79,7 @@ client.once("ready", async () => {
             console.warn("⚠️ Ticket-panel -kanavaa ei löytynyt configista!");
         }
 
-        // --- Lähetä allowlist-panel ---
+        // --- Allowlist-panel ---
         const allowlistChannel = guild.channels.cache.get(config.channels.haeAllowlistChannel);
         if (allowlistChannel) {
             await allowlist.sendAllowlistPanel(allowlistChannel);
@@ -90,7 +88,7 @@ client.once("ready", async () => {
             console.warn("⚠️ Allowlist-panel -kanavaa ei löytynyt configista!");
         }
 
-        // --- Käynnistä watchlist ---
+        // --- Watchlist ---
         try {
             const watchlistModule = require('./Functions/watchlist')(client);
             client.watchlist = watchlistModule;
@@ -118,11 +116,20 @@ client.on("messageCreate", async (message) => {
 
 client.on('interactionCreate', async (interaction) => {
     try {
-        // --- Ticket interactions ---
-        await ticket.handleInteraction(interaction);
+        // --- Allowlist button ---
+        if (interaction.isButton() && interaction.customId === 'create_allowlist') {
+            await allowlist.handleInteraction(interaction);
+            return;
+        }
 
-        // --- Allowlist interactions ---
-        await allowlist.handleInteraction(interaction);
+        // --- Allowlist modal ---
+        if (interaction.isModalSubmit() && interaction.customId === 'allowlist_modal') {
+            await allowlist.handleInteraction(interaction);
+            return;
+        }
+
+        // --- Muut ticket interactions ---
+        await ticket.handleInteraction(interaction);
 
     } catch (err) {
         console.error("Error handleInteraction (interactionCreate):", err);
