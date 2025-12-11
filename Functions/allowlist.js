@@ -10,8 +10,7 @@ const {
 const config = require('../config.json');
 
 module.exports = {
-
-    // --- Lähetä allowlist panel kanavalle ---
+    // --- Lähetä allowlist panel ---
     async sendAllowlistPanel(channel) {
         const embed = new EmbedBuilder()
             .setTitle('Hae allowlistiä palvelimellemme!')
@@ -24,35 +23,10 @@ module.exports = {
             .setStyle(ButtonStyle.Primary);
 
         const row = new ActionRowBuilder().addComponents(button);
-
         await channel.send({ embeds: [embed], components: [row] });
     },
 
-    // --- Käsittele napin painallus ja modal submit ---
-    async handleInteraction(interaction) {
-        try {
-            // --- Napin painallus ---
-            if (interaction.isButton() && interaction.customId === 'create_allowlist') {
-                // Näytä modal heti ilman deferUpdate()
-                await this.showAllowlistModal(interaction);
-                return;
-            }
-
-            // --- Modal submit ---
-            if (interaction.isModalSubmit() && interaction.customId === 'allowlist_modal') {
-                await this.handleModalSubmit(interaction);
-                return;
-            }
-
-        } catch (err) {
-            console.error('⚠️ Virhe allowlist handleInteractionissa:', err);
-            if (!interaction.replied && !interaction.deferred) {
-                await interaction.reply({ content: '❌ Tapahtui virhe interaktiossa.', ephemeral: true });
-            }
-        }
-    },
-
-    // --- Näytä modal käyttäjälle ---
+    // --- Näytä modal ---
     async showAllowlistModal(interaction) {
         const modal = new ModalBuilder()
             .setCustomId('allowlist_modal')
@@ -80,7 +54,7 @@ module.exports = {
 
         modal.addComponents(...rows);
 
-        // Näytä modal käyttäjälle
+        // --- Näytä modal suoraan ---
         await interaction.showModal(modal);
     },
 
@@ -94,7 +68,12 @@ module.exports = {
         const character = interaction.fields.getTextInputValue('character');
         const free = interaction.fields.getTextInputValue('free');
 
-        // --- Lähetä hakemus suoraan kanavalle ---
+        // --- Lähetä ilmoitus DM ---
+        try {
+            await interaction.user.send('✅ Hakemuksesi on otettu vastaan. Henkilökunta käsittelee tämän mahdollisimman pian!');
+        } catch {}
+
+        // --- Lähetä hakemus allowlist-kanavalle ---
         const allowlistChannel = interaction.guild.channels.cache.get(config.channels.allowlistChannel);
         if (!allowlistChannel) {
             console.error('⚠️ allowlistChannel ei löytynyt configista!');
@@ -120,19 +99,10 @@ module.exports = {
             .setFooter({ text: `Hakija: ${interaction.user.id}` })
             .setTimestamp();
 
-        // Lähetä viesti kanavalle
         const sentMessage = await allowlistChannel.send({ embeds: [embed] });
         await sentMessage.react('👍');
         await sentMessage.react('👎');
 
-        // --- Vahvistus käyttäjälle DM:llä ---
-        try {
-            await interaction.user.send('✅ Hakemuksesi on otettu vastaan. Henkilökunta käsittelee tämän mahdollisimman pian!');
-        } catch (err) {
-            console.warn(`⚠️ Ei voitu lähettää DM hakijalle ${interaction.user.tag}:`, err);
-        }
-
-        // --- Vahvista submit interaktio Discordissa ---
         if (!interaction.replied) {
             await interaction.reply({ content: '✅ Hakemus lähetetty onnistuneesti!', ephemeral: true });
         }
