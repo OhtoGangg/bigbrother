@@ -53,10 +53,10 @@ module.exports = {
 
             // --- Käynnistä watchlist ---
             try {
-                const watchlistModule = require("../../Functions/watchlist")(client);
+                const watchlistModule = require("../Functions/watchlist")(client);
                 client.watchlist = watchlistModule;
                 await watchlistModule.startWatching();
-                console.log("👁️ Watchlist-moduuli käynnistetty!");
+                console.log("👍 Watchlist-moduuli käynnistetty!");
             } catch (err) {
                 console.error("❌ Watchlist-moduulin käynnistys epäonnistui:", err);
             }
