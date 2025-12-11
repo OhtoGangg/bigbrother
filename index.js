@@ -49,9 +49,10 @@ process.on("unhandledRejection", (reason, promise) => console.error("Unhandled R
 process.on('uncaughtException', (error) => console.error('Unhandled Exception:', error));
 
 // -----------------------------
-// TICKET & WATCHLIST
+// TICKET, WATCHLIST & ALLOWLIST
 // -----------------------------
 const ticket = require('./Functions/ticket');
+const allowlist = require('./Functions/allowlist');
 
 // -----------------------------
 // EVENT HANDLER
@@ -78,6 +79,15 @@ client.once("ready", async () => {
             console.log("🎫 Ticket-panel lähetetty kanavalle");
         } else {
             console.warn("⚠️ Ticket-panel -kanavaa ei löytynyt configista!");
+        }
+
+        // --- Lähetä allowlist-panel ---
+        const allowlistChannel = guild.channels.cache.get(config.channels.haeAllowlistChannel);
+        if (allowlistChannel) {
+            await allowlist.sendAllowlistPanel(allowlistChannel);
+            console.log("📨 Allowlist-panel lähetetty kanavalle");
+        } else {
+            console.warn("⚠️ Allowlist-panel -kanavaa ei löytynyt configista!");
         }
 
         // --- Käynnistä watchlist ---
@@ -108,7 +118,12 @@ client.on("messageCreate", async (message) => {
 
 client.on('interactionCreate', async (interaction) => {
     try {
+        // --- Ticket interactions ---
         await ticket.handleInteraction(interaction);
+
+        // --- Allowlist interactions ---
+        await allowlist.handleInteraction(interaction);
+
     } catch (err) {
         console.error("Error handleInteraction (interactionCreate):", err);
     }
