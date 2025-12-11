@@ -35,8 +35,6 @@ const client = new Client({
     ]
 });
 
-// vittu mulla lahoo pää tän paskan kanssa 
-
 // -----------------------------
 // COLLECTIONS
 // -----------------------------
@@ -114,7 +112,7 @@ client.on("messageCreate", async (message) => {
 
 client.on('interactionCreate', async (interaction) => {
     try {
-        // --- Allowlist button ---
+        // --- Allowlist napin painallus ---
         if (interaction.isButton() && interaction.customId === 'create_allowlist') {
             await allowlist.showAllowlistModal(interaction);
             return;
