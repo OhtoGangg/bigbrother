@@ -30,16 +30,16 @@ module.exports = {
 
     // --- Käsittele interaction ---
     async handleInteraction(interaction) {
-        if (interaction.isButton()) {
-            if (interaction.customId === 'create_allowlist') {
+        try {
+            if (interaction.isButton() && interaction.customId === 'create_allowlist') {
                 await this.showAllowlistModal(interaction);
             }
-        }
 
-        if (interaction.isModalSubmit()) {
-            if (interaction.customId === 'allowlist_modal') {
+            if (interaction.isModalSubmit() && interaction.customId === 'allowlist_modal') {
                 await this.handleModalSubmit(interaction);
             }
+        } catch (err) {
+            console.error('⚠️ Virhe allowlist handleInteractionissa:', err);
         }
     },
 
@@ -59,7 +59,7 @@ module.exports = {
             { id: 'free', label: 'Vapaa sana!', style: TextInputStyle.Paragraph },
         ];
 
-        const rows = inputs.map(input => 
+        const rows = inputs.map(input =>
             new ActionRowBuilder().addComponents(
                 new TextInputBuilder()
                     .setCustomId(input.id)
@@ -92,31 +92,39 @@ module.exports = {
 
         // --- Lähetä hakemus allowlistChannel ---
         const allowlistChannel = interaction.guild.channels.cache.get(config.channels.allowlistChannel);
-        if (!allowlistChannel) return console.error('⚠️ allowlistChannel ei löytynyt configista!');
+        if (!allowlistChannel) {
+            console.error('⚠️ allowlistChannel ei löytynyt configista!');
+            await interaction.reply({ content: '❌ Tapahtui virhe, kanavaa ei löydy!', ephemeral: true });
+            return;
+        }
 
         const embed = new EmbedBuilder()
             .setTitle('Uusi Allowlist-hakemus')
             .setColor('Green')
             .setAuthor({ name: interaction.user.tag, iconURL: interaction.user.displayAvatarURL() })
             .addFields(
-                { name: 'DC käyttäjänimi', value: discordName },
-                { name: 'IRL-ikä', value: realAge },
-                { name: 'Kokemus roolipelaamisesta', value: experience },
-                { name: 'Miksi haet allowlistiä', value: why },
-                { name: 'Itsestäsi roolipelaajana', value: aboutYou },
-                { name: 'Tuleva hahmo', value: character },
-                { name: 'Vapaa sana', value: free }
+                { name: 'DC käyttäjänimi', value: discordName || 'Ei annettu' },
+                { name: 'IRL-ikä', value: realAge || 'Ei annettu' },
+                { name: 'Kokemus roolipelaamisesta', value: experience || 'Ei annettu' },
+                { name: 'Miksi haet allowlistiä', value: why || 'Ei annettu' },
+                { name: 'Itsestäsi roolipelaajana', value: aboutYou || 'Ei annettu' },
+                { name: 'Tuleva hahmo', value: character || 'Ei annettu' },
+                { name: 'Vapaa sana', value: free || 'Ei annettu' }
             )
             .setFooter({ text: `Hakija: ${interaction.user.id}` })
             .setTimestamp();
 
-        const sentMessage = await allowlistChannel.send({ embeds: [embed] });
+        try {
+            const sentMessage = await allowlistChannel.send({ embeds: [embed] });
+            // --- Lisää heti 👍 ja 👎 reaktiot ---
+            await sentMessage.react('👍');
+            await sentMessage.react('👎');
 
-        // --- Lisää heti 👍 ja 👎 reaktiot ---
-        await sentMessage.react('👍');
-        await sentMessage.react('👎');
-
-        // --- Vastaa käyttäjälle että modal hyväksytty ---
-        await interaction.reply({ content: '✅ Hakemus lähetetty onnistuneesti!', ephemeral: true });
+            // --- Vastaa käyttäjälle että modal hyväksytty ---
+            await interaction.reply({ content: '✅ Hakemus lähetetty onnistuneesti!', ephemeral: true });
+        } catch (err) {
+            console.error('⚠️ Virhe allowlist-viestin lähetyksessä:', err);
+            await interaction.reply({ content: '❌ Tapahtui virhe hakemusta lähetettäessä.', ephemeral: true });
+        }
     }
 };
