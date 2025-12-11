@@ -64,28 +64,22 @@ loadEvents(client);
 // -----------------------------
 client.once("ready", async () => {
     console.log("🔄 Ready event käynnistyy...");
+
     try {
-        // --- Lataa komennot ---
-        await loadEvents(client);
         console.log(`✅ Kirjauduttu sisään: ${client.user.tag}`);
 
         // --- Haetaan guild ---
-        let guild;
-        try {
-            guild = await client.guilds.fetch(config.guildID);
-            await guild.members.fetch();
-            console.log(`📦 Guild haettu: ${guild.name}, jäseniä: ${guild.memberCount}`);
-        } catch (err) {
-            console.error("❌ Virhe guildin fetchauksessa:", err);
-            return;
-        }
+        const guild = await client.guilds.fetch(config.guildID);
+        await guild.members.fetch();
+        console.log(`📦 Guild haettu: ${guild.name}, jäseniä: ${guild.memberCount}`);
 
         // --- Lähetä ticket-panel ---
         try {
             const ticketChannel = await guild.channels.fetch(config.ticket.ticketPanelChannelId);
             if (ticketChannel) {
+                console.log("🎫 Lähetetään ticket-panel...");
                 await ticket.sendTicketPanel(ticketChannel);
-                console.log("🎫 Ticket-panel lähetetty kanavalle.");
+                console.log("🎫 Ticket-panel lähetetty.");
             } else {
                 console.warn("⚠️ Ticket-panel kanavaa ei löytynyt. Tarkista config.");
             }
@@ -93,14 +87,13 @@ client.once("ready", async () => {
             console.error("❌ Virhe ticket-panelin lähetyksessä:", err);
         }
 
-// lähetä kusinen allowlist paneeli
-        
+        // --- Lähetä allowlist-panel ---
         try {
             const allowlistChannel = await guild.channels.fetch(config.channels.haeAllowlistChannel);
             if (allowlistChannel) {
                 console.log("👀 Allowlist-kanava löytyi, lähetetään panel...");
                 await allowlist.sendAllowlistPanel(allowlistChannel);
-                console.log("📨 Allowlist-panel lähetetty kanavalle.");
+                console.log("📨 Allowlist-panel lähetetty.");
             } else {
                 console.warn("⚠️ Allowlist-panel kanavaa ei löytynyt. Tarkista config.");
             }
@@ -119,23 +112,27 @@ client.once("ready", async () => {
         }
 
     } catch (error) {
-        console.error("❌ Error ready eventissä:", error);
+        console.error("❌ Virhe ready-eventissä:", error);
     }
 });
 
-// Interactiot 
-
+// -----------------------------
+// INTERACTIONS
+// -----------------------------
 client.on('interactionCreate', async (interaction) => {
-    console.log("Nyt tapahtu jotain") // <------------------- Lisää tohon logi
+    console.log("Nyt tapahtu jotain"); // debug
+
     try {
         // --- Allowlist napin painallus ---
         if (interaction.isButton() && interaction.customId === 'create_allowlist') {
+            console.log("Nyt avataan allowlist modali!");
             await allowlist.showAllowlistModal(interaction);
             return;
         }
 
         // --- Allowlist modal submit ---
         if (interaction.isModalSubmit() && interaction.customId === 'allowlist_modal') {
+            console.log("Allowlist modal submit käsitellään...");
             await allowlist.handleModalSubmit(interaction);
             return;
         }
@@ -144,24 +141,16 @@ client.on('interactionCreate', async (interaction) => {
         await ticket.handleInteraction(interaction);
 
     } catch (err) {
-        console.error("Error handleInteraction (interactionCreate):", err);
+        console.error("❌ Error handleInteraction (interactionCreate):", err);
         if (!interaction.replied && !interaction.deferred) {
             await interaction.reply({ content: '❌ Tapahtui virhe interaktiossa.', ephemeral: true });
         }
     }
 });
 
-// Tikettien toiminnot
-        await ticket.handleInteraction(interaction);
-
-    } catch (err) {
-        console.error("Error handleInteraction (interactionCreate):", err);
-        if (!interaction.replied && !interaction.deferred) {
-            await interaction.reply({ content: '❌ Tapahtui virhe interaktiossa.', ephemeral: true });
-        }
-    }
-});
-
+// -----------------------------
+// LOGIN
+// -----------------------------
 client.login(process.env.TOKEN)
     .then(() => console.log("🔑 Bot kirjautunut sisään, TOKEN käytetty"))
     .catch(err => console.error("❌ Bot kirjautuminen epäonnistui:", err));
