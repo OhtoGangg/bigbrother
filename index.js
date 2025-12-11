@@ -63,68 +63,88 @@ loadEvents(client);
 // BOT READY
 // -----------------------------
 client.once("ready", async () => {
-    console.log(`✅ Bot kirjautunut sisään: ${client.user.tag}`);
-
+    console.log("🔄 Ready event käynnistyy...");
     try {
-        const guild = await client.guilds.fetch(config.guildID);
-        await guild.members.fetch();
-        console.log(`📦 Guild haettu: ${guild.name}, jäseniä: ${guild.memberCount}`);
+        // --- Lataa komennot ---
+        await loadEvents(client);
+        console.log(`✅ Kirjauduttu sisään: ${client.user.tag}`);
 
-        // --- Ticket-panel ---
-        const ticketChannel = guild.channels.cache.get(config.ticket.ticketPanelChannelId);
-        if (ticketChannel) {
-            await ticket.sendTicketPanel(ticketChannel);
-            console.log("🎫 Ticket-panel lähetetty kanavalle");
-        } else console.warn("⚠️ Ticket-panel -kanavaa ei löytynyt configista!");
-
-        // --- Allowlist-panel ---
-        const allowlistChannel = guild.channels.cache.get(config.channels.haeAllowlistChannel);
-        if (allowlistChannel) {
-            await allowlist.sendAllowlistPanel(allowlistChannel);
-            console.log("📨 Allowlist-panel lähetetty kanavalle");
-        } else console.warn("⚠️ Allowlist-panel -kanavaa ei löytynyt configista!");
-
-        // --- Watchlist ---
+        // --- Haetaan guild ---
+        let guild;
         try {
-            const watchlistModule = require('./Functions/watchlist')(client);
+            guild = await client.guilds.fetch(config.guildID);
+            await guild.members.fetch();
+            console.log(`📦 Guild haettu: ${guild.name}, jäseniä: ${guild.memberCount}`);
+        } catch (err) {
+            console.error("❌ Virhe guildin fetchauksessa:", err);
+            return;
+        }
+
+        // --- Lähetä ticket-panel ---
+        try {
+            const ticketChannel = await guild.channels.fetch(config.ticket.ticketPanelChannelId);
+            if (ticketChannel) {
+                await ticket.sendTicketPanel(ticketChannel);
+                console.log("🎫 Ticket-panel lähetetty kanavalle.");
+            } else {
+                console.warn("⚠️ Ticket-panel kanavaa ei löytynyt. Tarkista config.");
+            }
+        } catch (err) {
+            console.error("❌ Virhe ticket-panelin lähetyksessä:", err);
+        }
+
+// lähetä kusinen allowlist paneeli
+        
+        try {
+            const allowlistChannel = await guild.channels.fetch(config.channels.haeAllowlistChannel);
+            if (allowlistChannel) {
+                console.log("👀 Allowlist-kanava löytyi, lähetetään panel...");
+                await allowlist.sendAllowlistPanel(allowlistChannel);
+                console.log("📨 Allowlist-panel lähetetty kanavalle.");
+            } else {
+                console.warn("⚠️ Allowlist-panel kanavaa ei löytynyt. Tarkista config.");
+            }
+        } catch (err) {
+            console.error("❌ Virhe allowlist-panelin lähetyksessä:", err);
+        }
+
+        // --- Käynnistä watchlist ---
+        try {
+            const watchlistModule = require("./Functions/watchlist")(client);
             client.watchlist = watchlistModule;
             await watchlistModule.startWatching();
-            console.log("👁️ Watchlist moduuli käynnistetty!");
+            console.log("👁️ Watchlist-moduuli käynnistetty!");
         } catch (err) {
             console.error("❌ Watchlist-moduulin käynnistys epäonnistui:", err);
         }
 
-    } catch (err) {
-        console.error("❌ Virhe ready-eventissä:", err);
+    } catch (error) {
+        console.error("❌ Error ready eventissä:", error);
     }
 });
 
-// -----------------------------
-// BOT EVENTS
-// -----------------------------
-client.on("messageCreate", async (message) => {
-    try {
-        await ticket.handleInteraction(message);
-    } catch (err) {
-        console.error("Error handleInteraction (messageCreate):", err);
-    }
-});
+// Interactiot 
 
 client.on('interactionCreate', async (interaction) => {
+    console.log("Nyt tapahtu jotain"); // <-- debug log
+
     try {
         // --- Allowlist napin painallus ---
         if (interaction.isButton() && interaction.customId === 'create_allowlist') {
+            console.log("Nyt avataan allowlist modali!");
             await allowlist.showAllowlistModal(interaction);
             return;
         }
 
-        // --- Allowlist modal submit ---
+// Allowlisti moduulijutut
+        
         if (interaction.isModalSubmit() && interaction.customId === 'allowlist_modal') {
+            console.log("Allowlist modal submit käsitellään...");
             await allowlist.handleModalSubmit(interaction);
             return;
         }
 
-        // --- Muut ticket interactions ---
+// Tikettien toiminnot
         await ticket.handleInteraction(interaction);
 
     } catch (err) {
@@ -135,9 +155,6 @@ client.on('interactionCreate', async (interaction) => {
     }
 });
 
-// -----------------------------
-// LOGIN
-// -----------------------------
 client.login(process.env.TOKEN)
     .then(() => console.log("🔑 Bot kirjautunut sisään, TOKEN käytetty"))
     .catch(err => console.error("❌ Bot kirjautuminen epäonnistui:", err));
