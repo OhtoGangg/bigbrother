@@ -26,6 +26,23 @@ module.exports = {
         await channel.send({ embeds: [embed], components: [row] });
     },
 
+    // --- Käsittele napin painallus tai modal submit ---
+    async handleInteraction(interaction) {
+        try {
+            if (interaction.isButton() && interaction.customId === 'create_allowlist') {
+                // --- Näytä modal heti napin painalluksesta ---
+                await this.showAllowlistModal(interaction);
+            } else if (interaction.isModalSubmit() && interaction.customId === 'allowlist_modal') {
+                await this.handleModalSubmit(interaction);
+            }
+        } catch (err) {
+            console.error('⚠️ Virhe allowlist handleInteractionissa:', err);
+            if (!interaction.replied && !interaction.deferred) {
+                await interaction.reply({ content: '❌ Tapahtui virhe interaktiossa.', ephemeral: true });
+            }
+        }
+    },
+
     // --- Näytä modal ---
     async showAllowlistModal(interaction) {
         const modal = new ModalBuilder()
@@ -54,7 +71,7 @@ module.exports = {
 
         modal.addComponents(...rows);
 
-        // --- Näytä modal suoraan ---
+        // --- Tämä avaa modalin heti ---
         await interaction.showModal(modal);
     },
 
