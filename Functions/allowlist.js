@@ -66,7 +66,6 @@ module.exports = {
             .setTitle('Allowlist Hakemus');
 
         const inputs = [
-            { id: 'discordName', label: 'DC käyttäjänimi?', style: TextInputStyle.Short },
             { id: 'realAge', label: 'IRL-ikä?', style: TextInputStyle.Short },
             { id: 'experience', label: 'Kokemuksesi roolipelaamisesta?', style: TextInputStyle.Paragraph },
             { id: 'aboutYou', label: 'Kerro itsestäsi roolipelaajana?', style: TextInputStyle.Paragraph },
@@ -93,7 +92,6 @@ module.exports = {
     async handleModalSubmit(interaction) {
         console.log("[DEBUG] handleModalSubmit kutsuttu:", interaction.user.tag);
 
-        const discordName = interaction.fields.getTextInputValue('discordName');
         const realAge = interaction.fields.getTextInputValue('realAge');
         const experience = interaction.fields.getTextInputValue('experience');
         const aboutYou = interaction.fields.getTextInputValue('aboutYou');
@@ -128,7 +126,6 @@ module.exports = {
             .setColor('Green')
             .setAuthor({ name: interaction.user.tag, iconURL: interaction.user.displayAvatarURL() })
             .addFields(
-                { name: 'DC käyttäjänimi', value: discordName || 'Ei annettu' },
                 { name: 'IRL-ikä', value: realAge || 'Ei annettu' },
                 { name: 'Kokemus roolipelaamisesta', value: experience || 'Ei annettu' },
                 { name: 'Itsestäsi roolipelaajana', value: aboutYou || 'Ei annettu' },
