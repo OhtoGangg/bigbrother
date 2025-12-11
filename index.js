@@ -64,22 +64,28 @@ loadEvents(client);
 // -----------------------------
 client.once("ready", async () => {
     console.log("🔄 Ready event käynnistyy...");
-
     try {
+        // --- Lataa komennot ---
+        await loadEvents(client);
         console.log(`✅ Kirjauduttu sisään: ${client.user.tag}`);
 
         // --- Haetaan guild ---
-        const guild = await client.guilds.fetch(config.guildID);
-        await guild.members.fetch();
-        console.log(`📦 Guild haettu: ${guild.name}, jäseniä: ${guild.memberCount}`);
+        let guild;
+        try {
+            guild = await client.guilds.fetch(config.guildID);
+            await guild.members.fetch();
+            console.log(`📦 Guild haettu: ${guild.name}, jäseniä: ${guild.memberCount}`);
+        } catch (err) {
+            console.error("❌ Virhe guildin fetchauksessa:", err);
+            return;
+        }
 
         // --- Lähetä ticket-panel ---
         try {
             const ticketChannel = await guild.channels.fetch(config.ticket.ticketPanelChannelId);
             if (ticketChannel) {
-                console.log("🎫 Lähetetään ticket-panel...");
                 await ticket.sendTicketPanel(ticketChannel);
-                console.log("🎫 Ticket-panel lähetetty.");
+                console.log("🎫 Ticket-panel lähetetty kanavalle.");
             } else {
                 console.warn("⚠️ Ticket-panel kanavaa ei löytynyt. Tarkista config.");
             }
@@ -93,7 +99,7 @@ client.once("ready", async () => {
             if (allowlistChannel) {
                 console.log("👀 Allowlist-kanava löytyi, lähetetään panel...");
                 await allowlist.sendAllowlistPanel(allowlistChannel);
-                console.log("📨 Allowlist-panel lähetetty.");
+                console.log("📨 Allowlist-panel lähetetty kanavalle.");
             } else {
                 console.warn("⚠️ Allowlist-panel kanavaa ei löytynyt. Tarkista config.");
             }
@@ -112,7 +118,7 @@ client.once("ready", async () => {
         }
 
     } catch (error) {
-        console.error("❌ Virhe ready-eventissä:", error);
+        console.error("❌ Error ready eventissä:", error);
     }
 });
 
@@ -120,7 +126,7 @@ client.once("ready", async () => {
 // INTERACTIONS
 // -----------------------------
 client.on('interactionCreate', async (interaction) => {
-    console.log("Nyt tapahtu jotain"); // debug
+    console.log("Nyt tapahtu jotain"); // <-- debug log
 
     try {
         // --- Allowlist napin painallus ---
@@ -141,7 +147,7 @@ client.on('interactionCreate', async (interaction) => {
         await ticket.handleInteraction(interaction);
 
     } catch (err) {
-        console.error("❌ Error handleInteraction (interactionCreate):", err);
+        console.error("Error handleInteraction (interactionCreate):", err);
         if (!interaction.replied && !interaction.deferred) {
             await interaction.reply({ content: '❌ Tapahtui virhe interaktiossa.', ephemeral: true });
         }
