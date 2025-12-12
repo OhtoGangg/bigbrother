@@ -3,23 +3,19 @@ const config = require("../../config.json");
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName("allowlist")
+        .setName("hyväksy")
         .setDescription("Manuaalisesti hyväksy tai hylkää allowlist-hakemus")
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-        .addSubcommand(subcommand =>
-            subcommand
-                .setName("hyväksy")
-                .setDescription("Hyväksy hakemus")
-                .addUserOption(option =>
-                    option.setName("hakija")
-                          .setDescription("Henkilö, jonka hakemus hyväksytään")
-                          .setRequired(true))
-                .addStringOption(option =>
-                    option.setName("viestiid")
-                          .setDescription("Alkuperäisen hakemusviestin ID (valinnainen)")
-                          .setRequired(false)))
-        .addSubcommand(subcommand =>
-            subcommand
+            .addUserOption(option =>
+                option.setName("hakija")
+                        .setDescription("Henkilö, jonka hakemus hyväksytään")
+                        .setRequired(true))
+            .addStringOption(option =>
+                option.setName("viestiid")
+                        .setDescription("Alkuperäisen hakemusviestin ID (valinnainen)")
+                        .setRequired(false))),
+    
+        data: new SlashCommandBuilder()
                 .setName("hylkää")
                 .setDescription("Hylkää hakemus")
                 .addUserOption(option =>
