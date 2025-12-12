@@ -1,7 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require("discord.js");
 const config = require("../../config.json");
 
-// Exportataan kaksi komentoa erikseen
+// Exportataan kaksi komentoa
 module.exports = {
 
     hyväksy: {
@@ -43,7 +43,12 @@ module.exports = {
     }
 };
 
+
+
+// =======================================================
 //   YHTEINEN KÄSITTELIJÄ
+// =======================================================
+
 async function handleAllowlist(interaction, action) {
 
     const guild = interaction.guild;
@@ -57,7 +62,9 @@ async function handleAllowlist(interaction, action) {
     const yllapito = config.ticket.roleYllapito;
     const valvoja = config.ticket.roleValvoja;
 
+    // --------------------------------------------------
     // Tarkista roolit
+    // --------------------------------------------------
     if (!member.roles.cache.has(yllapito) && !member.roles.cache.has(valvoja)) {
         console.log(`[DENIED] ${member.user.tag} yritti käyttää /${action} ilman oikeuksia.`);
 
@@ -71,7 +78,9 @@ async function handleAllowlist(interaction, action) {
     let upvotes = null;
     let downvotes = null;
 
-    // 1) Haetaan alkuperäinen viesti jos messageId on annettu
+    // --------------------------------------------------
+    // Haetaan alkuperäinen viesti jos messageId on annettu
+    // --------------------------------------------------
     if (messageId) {
         const channel = guild.channels.cache.get(config.channels.allowlistChannel);
 
@@ -93,17 +102,20 @@ async function handleAllowlist(interaction, action) {
         }
     }
 
-    // Jos ei ollut viesti-ID:llä dataa → luodaan perus embed
+    // --------------------------------------------------
+    // Jos ei ollut embed-dataa, luodaan uusi
+    // --------------------------------------------------
     if (!embed) {
         embed = new EmbedBuilder()
             .setAuthor({ name: applicant.tag, iconURL: applicant.displayAvatarURL() })
             .setTimestamp();
+
         console.log("[DEBUG] Luotiin uusi embed ilman alkuperäistä viestiä.");
     } else {
         embed = EmbedBuilder.from(embed);
     }
 
-    // Äänestystulos mukaan
+    // Lisää äänestystulos
     if (upvotes !== null && downvotes !== null) {
         embed.addFields({
             name: "Äänestystulos",
@@ -111,13 +123,33 @@ async function handleAllowlist(interaction, action) {
         });
     }
 
-        // Anna rooli
+    // ======================================================
+    //   HYVÄKSY
+    // ======================================================
+    if (action === "hyväksy") {
+
+        embed.setTitle("✅ Hakemus hyväksytty");
+
+        const hyvaksytyt = guild.channels.cache.get(config.channels.hyvaksytytChannel);
+        if (!hyvaksytyt)
+            return interaction.reply({ content: "❌ Hyväksytyt-kanavaa ei löytynyt.", ephemeral: true });
+
+        await hyvaksytyt.send({ embeds: [embed] });
+
+        // Lähetä DM hakijalle
+        try {
+            await applicant.send("🎉 Onnea! Hakemuksesi on hyväksytty.");
+        } catch (err) {
+            console.log(`[WARN] Ei voitu lähettää DM hakijalle (${applicant.tag})`);
+        }
+
+        // Anna haastattelurooli
         const role = guild.roles.cache.get(config.roles.roleAlHaastattelu);
         if (applicantMember && role && !applicantMember.roles.cache.has(role.id)) {
             await applicantMember.roles.add(role);
         }
 
-        // Lokikanavaan tieto
+        // Logi
         if (logChannel) {
             await logChannel.send({
                 embeds: [
@@ -142,7 +174,10 @@ async function handleAllowlist(interaction, action) {
         });
     }
 
-    //  HYLKÄÄ
+
+    // ======================================================
+    //   HYLKÄÄ
+    // ======================================================
     if (action === "hylkää") {
 
         embed.setTitle("❌ Hakemus hylätty");
@@ -153,7 +188,7 @@ async function handleAllowlist(interaction, action) {
 
         await hylatyt.send({ embeds: [embed] });
 
-        // Lokikanava
+        // Logi
         if (logChannel) {
             await logChannel.send({
                 embeds: [
