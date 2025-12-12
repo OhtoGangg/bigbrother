@@ -29,38 +29,35 @@ module.exports = {
         console.log("[DEBUG] Allowlist panel lähetetty:", sentMessage.id);
     },
 
-    // --- Käsittele napin painallus tai modal submit ---
+    // --- Interaction handler ---
     async handleInteraction(interaction) {
         console.log("[DEBUG] handleInteraction kutsuttu:", interaction.type);
 
         try {
             if (interaction.isButton() && interaction.customId === 'create_allowlist') {
                 console.log("[DEBUG] Napin painallus havaittu, avataan modal...");
-                await this.showAllowlistModal(interaction);
-                console.log("[DEBUG] Modal näytetty");
-                return;
-            } 
-
-            if (interaction.isModalSubmit() && interaction.customId === 'allowlist_modal') {
-                console.log("[DEBUG] Modal submit havaittu, käsitellään hakemus...");
-                await this.handleModalSubmit(interaction);
-                console.log("[DEBUG] Modal submit käsitelty");
+                await module.exports.showAllowlistModal(interaction);
                 return;
             }
 
-            console.log("[DEBUG] Interaction ei ollut nappi tai modal submit");
+            if (interaction.isModalSubmit() && interaction.customId === 'allowlist_modal') {
+                console.log("[DEBUG] Modal submit havaittu, käsitellään hakemus...");
+                await module.exports.handleModalSubmit(interaction);
+                return;
+            }
+
         } catch (err) {
             console.error('[ERROR] Virhe handleInteractionissa:', err);
             if (!interaction.replied && !interaction.deferred) {
-                console.log("[DEBUG] Lähetetään fallback-viesti käyttäjälle");
                 await interaction.reply({ content: '❌ Tapahtui virhe interaktiossa.', ephemeral: true });
             }
         }
     },
 
-    // --- Näytä modal ---
+    // --- Modal ---
     async showAllowlistModal(interaction) {
         console.log("[DEBUG] showAllowlistModal kutsuttu");
+
         const modal = new ModalBuilder()
             .setCustomId('allowlist_modal')
             .setTitle('Allowlist Hakemus');
@@ -84,11 +81,10 @@ module.exports = {
 
         modal.addComponents(...rows);
 
-        console.log("[DEBUG] Näytetään modal interaktiolle");
         await interaction.showModal(modal);
     },
 
-    // --- Käsittele modal submit ---
+    // --- Modal submit ---
     async handleModalSubmit(interaction) {
         console.log("[DEBUG] handleModalSubmit kutsuttu:", interaction.user.tag);
 
@@ -97,57 +93,47 @@ module.exports = {
         const aboutYou = interaction.fields.getTextInputValue('aboutYou');
         const character = interaction.fields.getTextInputValue('character');
 
-        console.log("[DEBUG] Modal input arvot haettu");
-
-        // --- Lähetä ilmoitus DM ---
+        // --- Lähetä DM ---
         try {
-            console.log("[DEBUG] Lähetetään DM käyttäjälle");
-            await interaction.user.send('✅ Hakemuksesi on otettu vastaan. Henkilökunta käsittelee tämän mahdollisimman pian!');
-            console.log("[DEBUG] DM lähetetty");
+            await interaction.user.send('✅ Hakemuksesi on otettu vastaan. Henkilökunta käsittelee tämän pian!');
         } catch (err) {
             console.error("[WARN] DM ei onnistunut:", err);
         }
 
-        // --- Lähetä hakemus allowlist-kanavalle ---
+        // --- Kanava ---
         const allowlistChannel = interaction.guild.channels.cache.get(config.channels.allowlistChannel);
         if (!allowlistChannel) {
-            console.error('[ERROR] allowlistChannel ei löytynyt configista!');
             if (!interaction.replied) {
-                console.log("[DEBUG] Lähetetään virheviesti käyttäjälle");
-                await interaction.reply({ content: '❌ Tapahtui virhe, kanavaa ei löydy!', ephemeral: true });
+                await interaction.reply({ content: '❌ Virhe: Allowlist-kanavaa ei löydy.', ephemeral: true });
             }
             return;
         }
 
-        console.log("[DEBUG] Lähetetään hakemuskanavalle:", allowlistChannel.id);
-
+        // --- Embed ---
         const embed = new EmbedBuilder()
             .setTitle('Uusi Allowlist-hakemus')
             .setColor('Green')
             .setAuthor({ name: interaction.user.tag, iconURL: interaction.user.displayAvatarURL() })
             .addFields(
-                { name: 'IRL-ikä', value: realAge || 'Ei annettu' },
-                { name: 'Kokemus roolipelaamisesta', value: experience || 'Ei annettu' },
-                { name: 'Itsestäsi roolipelaajana', value: aboutYou || 'Ei annettu' },
-                { name: 'Tuleva hahmo', value: character || 'Ei annettu' },
+                { name: 'IRL-ikä', value: realAge },
+                { name: 'Kokemus roolipelaamisesta', value: experience },
+                { name: 'Itsestäsi roolipelaajana', value: aboutYou },
+                { name: 'Tuleva hahmo', value: character },
             )
             .setFooter({ text: `Hakija: ${interaction.user.id}` })
             .setTimestamp();
 
         try {
             const sentMessage = await allowlistChannel.send({ embeds: [embed] });
-            console.log("[DEBUG] Hakemus lähetetty kanavalle:", sentMessage.id);
 
             await sentMessage.react('👍');
             await sentMessage.react('👎');
-            console.log("[DEBUG] Reaktiot lisätty viestiin");
 
             if (!interaction.replied) {
                 await interaction.reply({ content: '✅ Hakemus lähetetty onnistuneesti!', ephemeral: true });
-                console.log("[DEBUG] Interaction reply lähetetty");
             }
         } catch (err) {
-            console.error("[ERROR] Hakemuksen lähetys kanavalle epäonnistui:", err);
+            console.error("[ERROR] Hakemuksen lähetys epäonnistui:", err);
             if (!interaction.replied) {
                 await interaction.reply({ content: '❌ Hakemuksen lähetys epäonnistui.', ephemeral: true });
             }
