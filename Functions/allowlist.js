@@ -15,9 +15,9 @@ module.exports = {
     async sendAllowlistPanel(channel) {
         console.log("[DEBUG] sendAllowlistPanel kutsuttu");
         const embed = new EmbedBuilder()
-            .setTitle('Hae allowlistiä palvelimellemme!')
-            .setDescription('Paina nappia ja täytä hakemuslomake.')
-            .setColor('Blue');
+            .setTitle('Hae allowlistiä palvelimelle!')
+            .setDescription('Paina alla olevaa nappia ja täytä hakemuslomake tarkasti ajatuksen kanssa.')
+            .setColor('Green');
 
         const button = new ButtonBuilder()
             .setCustomId('create_allowlist')
@@ -61,12 +61,13 @@ module.exports = {
 
         const modal = new ModalBuilder()
             .setCustomId('allowlist_modal')
-            .setTitle('Allowlist Hakemus');
+            .setTitle('Allowlist hakemus');
 
         const inputs = [
             { id: 'realAge', label: 'IRL-ikä?', style: TextInputStyle.Short },
             { id: 'experience', label: 'Kokemuksesi roolipelaamisesta?', style: TextInputStyle.Paragraph },
             { id: 'aboutYou', label: 'Kerro itsestäsi roolipelaajana?', style: TextInputStyle.Paragraph },
+            { id: 'whyHere', label: 'Miksi juuri meidän palvelin?', style: TextInputStyle.Paragraph },
             { id: 'character', label: 'Kerro tulevasta hahmostasi?', style: TextInputStyle.Paragraph }
         ];
 
@@ -92,6 +93,7 @@ module.exports = {
         const realAge = interaction.fields.getTextInputValue('realAge');
         const experience = interaction.fields.getTextInputValue('experience');
         const aboutYou = interaction.fields.getTextInputValue('aboutYou');
+        const whyHere = interaction.fields.getTextInputValue('whyHere');
         const character = interaction.fields.getTextInputValue('character');
 
         // --- Lähetä DM ---
@@ -117,9 +119,10 @@ module.exports = {
             .setAuthor({ name: interaction.user.tag, iconURL: interaction.user.displayAvatarURL() })
             .addFields(
                 { name: 'IRL-ikä', value: realAge },
-                { name: 'Kokemus roolipelaamisesta', value: experience },
-                { name: 'Itsestäsi roolipelaajana', value: aboutYou },
-                { name: 'Tuleva hahmo', value: character },
+                { name: 'Kokemus roolipelaamisesta?', value: experience },
+                { name: 'Itsestäsi roolipelaajana?', value: aboutYou },
+                { name: 'Miksi juuri meidän palvelin?', value: whyHere },
+                { name: 'Tuleva hahmo?', value: character },
             )
             .setFooter({ text: `Hakija: ${interaction.user.id}` })
             .setTimestamp();
