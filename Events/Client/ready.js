@@ -10,9 +10,13 @@ module.exports = {
     once: true,
     async execute(client) {
         try {
+             // --- Alusta watchlist ---
+            const watchlistModule = require("../../Functions/watchlist")(client);
+            client.watchlist = watchlistModule;
+
             // --- Lataa komennot ---
             await loadCommands(client);
-            console.log(`Kirjauduttu sisään: ${client.user.tag}`);
+            console.log(Kirjauduttu sisään: ${client.user.tag});
 
             // --- Lähetä ticket-panel ---
             const ticketChannel = client.channels.cache.get(config.ticket.ticketPanelChannelId);
@@ -35,19 +39,19 @@ module.exports = {
             // --- Käynnistä watchlist ---
             try {
                 await watchlistModule.startWatching();
-                console.log("👁️ Watchlist-moduuli käynnistetty!");
+                console.log("Watchlist-moduuli käynnistetty!");
             } catch (err) {
-                console.error("❌ Watchlist-moduulin käynnistys epäonnistui:", err);
+                console.error("Watchlist-moduulin käynnistys epäonnistui:", err);
             }
 
             // --- Luo intervallitarkistus kaikille jäsenille watchlistiä varten ---
-            const intervalTime = 1000 * 60 * 60 //1000ms*60s = 1min | 1min*60min = 1h
-            setInterval(() => {
+            const intervalTime = 1000 * 60 * 60 //1000ms60s = 1min | 1min60min = 1h
+             setInterval(() => {
                 watchlistModule.scanEveryMember()
-            }, intervalTime)
-
-        } catch (error) {
-            console.error("❌ Error loading commands:", error);
-        }
+            }, intervalTime)   
+            
+            } catch (error) {
+                console.error("❌Error loading commands:", error);
+            }
     }
 };
