@@ -1,10 +1,8 @@
 const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require("discord.js");
 const config = require("../../config.json");
 
-// Exportataan kaksi komentoa
-module.exports = {
-
-    hyväksy: {
+module.exports = [
+    {
         data: new SlashCommandBuilder()
             .setName("hyväksy")
             .setDescription("Hyväksy allowlist-hakemus manuaalisesti")
@@ -14,8 +12,7 @@ module.exports = {
                     .setRequired(true))
             .addStringOption(option =>
                 option.setName("viestiid")
-                    .setDescription("Alkuperäisen hakemusviestin ID (valinnainen)")
-                    .setRequired(false))
+                    .setDescription("Alkuperäisen hakemusviestin ID (valinnainen)"))
             .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
         async execute(interaction) {
@@ -23,7 +20,7 @@ module.exports = {
         }
     },
 
-    hylkää: {
+    {
         data: new SlashCommandBuilder()
             .setName("hylkää")
             .setDescription("Hylkää allowlist-hakemus manuaalisesti")
@@ -33,21 +30,16 @@ module.exports = {
                     .setRequired(true))
             .addStringOption(option =>
                 option.setName("viestiid")
-                    .setDescription("Alkuperäisen hakemusviestin ID (valinnainen)")
-                    .setRequired(false))
+                    .setDescription("Alkuperäisen hakemusviestin ID (valinnainen)"))
             .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
         async execute(interaction) {
             await handleAllowlist(interaction, "hylkää");
         }
     }
-};
+];
 
-
-
-// =======================================================
-//   YHTEINEN KÄSITTELIJÄ
-// =======================================================
+// ------------------ YHTEINEN FUNKTIO ---------------------
 
 async function handleAllowlist(interaction, action) {
 
@@ -62,9 +54,7 @@ async function handleAllowlist(interaction, action) {
     const yllapito = config.ticket.roleYllapito;
     const valvoja = config.ticket.roleValvoja;
 
-    // --------------------------------------------------
-    // Tarkista roolit
-    // --------------------------------------------------
+    // 🔐 Tarkista roolien oikeudet
     if (!member.roles.cache.has(yllapito) && !member.roles.cache.has(valvoja)) {
         console.log(`[DENIED] ${member.user.tag} yritti käyttää /${action} ilman oikeuksia.`);
 
@@ -78,9 +68,7 @@ async function handleAllowlist(interaction, action) {
     let upvotes = null;
     let downvotes = null;
 
-    // --------------------------------------------------
-    // Haetaan alkuperäinen viesti jos messageId on annettu
-    // --------------------------------------------------
+    // 🔍 Jos viesti-ID annettu → lataa_allowlist-kanavalta
     if (messageId) {
         const channel = guild.channels.cache.get(config.channels.allowlistChannel);
 
@@ -94,58 +82,36 @@ async function handleAllowlist(interaction, action) {
             upvotes = msg.reactions.cache.get("👍")?.count - 1 || 0;
             downvotes = msg.reactions.cache.get("👎")?.count - 1 || 0;
 
-            console.log(`[DEBUG] Haettu viesti-ID ${messageId}. Upvotes: ${upvotes}, Downvotes: ${downvotes}`);
+            console.log(`[DEBUG] Haettu viesti ${messageId} 👍 ${upvotes} / 👎 ${downvotes}`);
 
         } catch (err) {
-            console.log(`[ERROR] Virhe haettaessa viestiä: ${err}`);
+            console.log(`[ERROR] Viestiä ei löytynyt: ${err}`);
             return interaction.reply({ content: "❌ Viestiä ei löytynyt allowlist-kanavasta.", ephemeral: true });
         }
     }
 
-    // --------------------------------------------------
-    // Jos ei ollut embed-dataa, luodaan uusi
-    // --------------------------------------------------
     if (!embed) {
         embed = new EmbedBuilder()
             .setAuthor({ name: applicant.tag, iconURL: applicant.displayAvatarURL() })
             .setTimestamp();
-
         console.log("[DEBUG] Luotiin uusi embed ilman alkuperäistä viestiä.");
     } else {
         embed = EmbedBuilder.from(embed);
     }
 
-    // Lisää äänestystulos
-    if (upvotes !== null && downvotes !== null) {
-        embed.addFields({
-            name: "Äänestystulos",
-            value: `👍 ${upvotes}\n👎 ${downvotes}`
-        });
-    }
+    if (upvotes !== null)
+        embed.addFields({ name: "Äänet", value: `👍 ${upvotes}\n👎 ${downvotes}` });
 
-    // ======================================================
-    //   HYVÄKSY
-    // ======================================================
+    // ---------------- HYVÄKSY ----------------
     if (action === "hyväksy") {
 
         embed.setTitle("✅ Hakemus hyväksytty");
 
-        const hyvaksytyt = guild.channels.cache.get(config.channels.hyvaksytytChannel);
-        if (!hyvaksytyt)
-            return interaction.reply({ content: "❌ Hyväksytyt-kanavaa ei löytynyt.", ephemeral: true });
+        const hyväksytyt = guild.channels.cache.get(config.channels.hyvaksytytChannel);
+        await hyväksytyt.send({ embeds: [embed] });
 
-        await hyvaksytyt.send({ embeds: [embed] });
-
-        // Lähetä DM hakijalle
-        try {
-            await applicant.send("🎉 Onnea! Hakemuksesi on hyväksytty.");
-        } catch (err) {
-            console.log(`[WARN] Ei voitu lähettää DM hakijalle (${applicant.tag})`);
-        }
-
-        // Anna haastattelurooli
         const role = guild.roles.cache.get(config.roles.roleAlHaastattelu);
-        if (applicantMember && role && !applicantMember.roles.cache.has(role.id)) {
+        if (role && applicantMember && !applicantMember.roles.cache.has(role.id)) {
             await applicantMember.roles.add(role);
         }
 
@@ -156,8 +122,8 @@ async function handleAllowlist(interaction, action) {
                     new EmbedBuilder()
                         .setTitle("📗 Manuaalinen hyväksyntä")
                         .addFields(
-                            { name: "Käsittelijä", value: `${member.user.tag} (${member.id})` },
-                            { name: "Hakija", value: `${applicant.tag} (${applicant.id})` },
+                            { name: "Käsittelijä", value: `${member.user.tag}` },
+                            { name: "Hakija", value: `${applicant.tag}` },
                             { name: "Viesti-ID", value: messageId || "Ei annettu" },
                             { name: "Aika", value: `<t:${Math.floor(Date.now() / 1000)}:F>` }
                         )
@@ -166,7 +132,7 @@ async function handleAllowlist(interaction, action) {
             });
         }
 
-        console.log(`[SUCCESS] ${member.user.tag} hyväksyi hakemuksen: ${applicant.tag}`);
+        console.log(`[SUCCESS] ${member.user.tag} hyväksyi: ${applicant.tag}`);
 
         return interaction.reply({
             content: `✅ Hakemus hyväksytty: **${applicant.tag}**`,
@@ -174,29 +140,22 @@ async function handleAllowlist(interaction, action) {
         });
     }
 
-
-    // ======================================================
-    //   HYLKÄÄ
-    // ======================================================
+    // ---------------- HYLKÄÄ ----------------
     if (action === "hylkää") {
 
         embed.setTitle("❌ Hakemus hylätty");
 
         const hylatyt = guild.channels.cache.get(config.channels.hylatytChannel);
-        if (!hylatyt)
-            return interaction.reply({ content: "❌ Hylätyt-kanavaa ei löytynyt.", ephemeral: true });
-
         await hylatyt.send({ embeds: [embed] });
 
-        // Logi
         if (logChannel) {
             await logChannel.send({
                 embeds: [
                     new EmbedBuilder()
                         .setTitle("📕 Manuaalinen hylkäys")
                         .addFields(
-                            { name: "Käsittelijä", value: `${member.user.tag} (${member.id})` },
-                            { name: "Hakija", value: `${applicant.tag} (${applicant.id})` },
+                            { name: "Käsittelijä", value: `${member.user.tag}` },
+                            { name: "Hakija", value: `${applicant.tag}` },
                             { name: "Viesti-ID", value: messageId || "Ei annettu" },
                             { name: "Aika", value: `<t:${Math.floor(Date.now() / 1000)}:F>` }
                         )
@@ -205,7 +164,7 @@ async function handleAllowlist(interaction, action) {
             });
         }
 
-        console.log(`[SUCCESS] ${member.user.tag} hylkäsi hakemuksen: ${applicant.tag}`);
+        console.log(`[SUCCESS] ${member.user.tag} hylkäsi: ${applicant.tag}`);
 
         return interaction.reply({
             content: `❌ Hakemus hylätty: **${applicant.tag}**`,
