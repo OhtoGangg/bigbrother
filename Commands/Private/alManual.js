@@ -1,10 +1,11 @@
-const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require("discord.js");
 const config = require("../../config.json");
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("allowlist")
         .setDescription("Manuaalisesti hyväksy tai hylkää allowlist-hakemus")
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
         .addSubcommand(subcommand =>
             subcommand
                 .setName("hyväksy")
@@ -31,15 +32,27 @@ module.exports = {
                           .setRequired(false))),
     
     async execute(interaction) {
+        const guild = interaction.guild;
+        const member = interaction.member;
+
+        // Tarkista roolit
+        const yllapitoRole = config.ticket.roleYllapito;
+        const valvojaRole = config.ticket.roleValvoja;
+
+        if (!member.roles.cache.has(yllapitoRole) && !member.roles.cache.has(valvojaRole)) {
+            return interaction.reply({ content: "❌ Sinulla ei ole oikeuksia käyttää tätä komentoa.", ephemeral: true });
+        }
+
         const subcommand = interaction.options.getSubcommand();
         const applicant = interaction.options.getUser("hakija");
         const messageId = interaction.options.getString("viestiid");
-        const guild = interaction.guild;
-        const member = guild.members.cache.get(applicant.id);
+        const applicantMember = guild.members.cache.get(applicant.id);
 
         let embed;
+        let upvotes = null;
+        let downvotes = null;
 
-        // Haetaan alkuperäinen embed, jos viesti-ID annettu
+        // Haetaan alkuperäinen viesti ja äänet, jos viesti-ID annettu
         if (messageId) {
             const channel = guild.channels.cache.get(config.channels.allowlistChannel);
             if (!channel) return interaction.reply({ content: "Allowlist-kanavaa ei löytynyt.", ephemeral: true });
@@ -47,6 +60,13 @@ module.exports = {
             try {
                 const msg = await channel.messages.fetch(messageId);
                 embed = msg.embeds[0];
+                
+                // Hae äänestystulokset
+                const upvoteEmoji = "👍";
+                const downvoteEmoji = "👎";
+                upvotes = msg.reactions.cache.get(upvoteEmoji)?.count - 1 || 0;
+                downvotes = msg.reactions.cache.get(downvoteEmoji)?.count - 1 || 0;
+
             } catch {
                 return interaction.reply({ content: "Viestiä ei löytynyt allowlist-kanavasta.", ephemeral: true });
             }
@@ -60,6 +80,11 @@ module.exports = {
             embed = EmbedBuilder.from(embed);
         }
 
+        // Lisää äänestystulos, jos saatavilla
+        if (upvotes !== null && downvotes !== null) {
+            embed.addFields({ name: "Äänestystulos", value: `👍 ${upvotes}, 👎 ${downvotes}` });
+        }
+
         if (subcommand === "hyväksy") {
             embed.setTitle("✅ Hakemus hyväksytty");
 
@@ -68,15 +93,14 @@ module.exports = {
             await hyvaksytyt.send({ embeds: [embed] });
 
             try {
-                await applicant.send("🎉 Hakemuksesi on hyväksytty manuaalisesti! Seuraavaksi pääset odottamaan haastattelua.");
+                await applicant.send("🎉 Onnea, hakemuksesi on hyväksytty! Seuraavaksi pääset odottamaan haastattelua.");
             } catch {
                 console.warn(`⚠️ Ei voitu lähettää DM hakijalle ${applicant.tag}`);
             }
 
-            // Anna AL-haastattelu-rooli
             const role = guild.roles.cache.get(config.roles.roleAlHaastattelu);
-            if (member && role && !member.roles.cache.has(role.id)) {
-                await member.roles.add(role);
+            if (applicantMember && role && !applicantMember.roles.cache.has(role.id)) {
+                await applicantMember.roles.add(role);
             }
 
             await interaction.reply({ content: `✅ Hakemus hyväksytty: ${applicant.tag}`, ephemeral: true });
@@ -89,7 +113,7 @@ module.exports = {
             await hylatyt.send({ embeds: [embed] });
 
             try {
-                await applicant.send("❌ Hakemuksesi on hylätty manuaalisesti.");
+                await applicant.send("❌ Hakemuksesi on tällä kertaa hylätty... Kokeile onneasi uudelleen!");
             } catch {
                 console.warn(`⚠️ Ei voitu lähettää DM hakijalle ${applicant.tag}`);
             }
