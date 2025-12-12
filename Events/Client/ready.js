@@ -1,70 +1,53 @@
 const { loadCommands } = require("../../Handlers/commandHandler");
-const ticket = require("../../Functions/ticket");
-const allowlist = require("../../Functions/allowlist");
+const ticket = require("../../Functions/ticket"); // ticket.js moduuli
+const allowlist = require("../../Functions/allowlist"); // allowlist.js moduuli
 const config = require("../../config.json");
+const watchlistModule = require("../../Functions/watchlist")(client);
+client.watchlist = watchlistModule;
 
 module.exports = {
     name: "clientReady",
     once: true,
     async execute(client) {
-        console.log("🔄 Ready event käynnistyy...");
-
         try {
-            // --- Komentojen lataus ---
+            // --- Lataa komennot ---
             await loadCommands(client);
-            console.log(`✅ Kirjauduttu sisään: ${client.user.tag}`);
+            console.log(`Kirjauduttu sisään: ${client.user.tag}`);
 
-            // --- Haetaan guild ---
-            let guild;
-            try {
-                guild = await client.guilds.fetch(config.guildID);
-                await guild.members.fetch();
-                console.log(`📦 Guild haettu: ${guild.name}, jäseniä: ${guild.memberCount}`);
-            } catch (err) {
-                console.error("❌ Virhe guildin noutamisessa:", err);
-                return;
+            // --- Lähetä ticket-panel ---
+            const ticketChannel = client.channels.cache.get(config.ticket.ticketPanelChannelId);
+            if (ticketChannel) {
+                await ticket.sendTicketPanel(ticketChannel);
+                console.log("🎫 Ticket-panel lähetetty kanavalle.");
+            } else {
+                console.warn("⚠️ Ticket-panel kanavaa ei löytynyt. Tarkista config.");
             }
 
-            // --- Ticket panel ---
-            try {
-                const ticketChannel = await guild.channels.fetch(config.ticket.ticketPanelChannelId);
-                if (ticketChannel) {
-                    await ticket.sendTicketPanel(ticketChannel);
-                    console.log("🎫 Ticket-panel lähetetty.");
-                } else {
-                    console.warn("⚠️ Ticket-panel kanavaa ei löytynyt configista.");
-                }
-            } catch (err) {
-                console.error("❌ Virhe ticket-panelin lähetyksessä:", err);
+            // --- Lähetä allowlist-panel ---
+            const allowlistChannel = client.channels.cache.get(config.channels.haeAllowlistChannel);
+            if (allowlistChannel) {
+                await allowlist.sendAllowlistPanel(allowlistChannel);
+                console.log("📨 Allowlist-panel lähetetty kanavalle.");
+            } else {
+                console.warn("⚠️ Allowlist-panel kanavaa ei löytynyt. Tarkista config.");
             }
 
-            // --- Allowlist panel ---
+            // --- Käynnistä watchlist ---
             try {
-                const allowlistChannel = await guild.channels.fetch(config.channels.haeAllowlistChannel);
-                if (allowlistChannel) {
-                    console.log("👀 Allowlist-kanava löytyi, lähetetään panel...");
-                    await allowlist.sendAllowlistPanel(allowlistChannel);
-                    console.log("📨 Allowlist-panel lähetetty.");
-                } else {
-                    console.warn("⚠️ Allowlist-kanavaa ei löytynyt configista.");
-                }
-            } catch (err) {
-                console.error("❌ Virhe allowlist-panelissa:", err);
-            }
-
-            // --- Watchlist ---
-            try {
-                const watchlistModule = require("../../Functions/watchlist")(client);
-                client.watchlist = watchlistModule;
-
                 await watchlistModule.startWatching();
-                console.log("👍 Watchlist-moduuli käynnistetty!");
+                console.log("👁️ Watchlist-moduuli käynnistetty!");
             } catch (err) {
                 console.error("❌ Watchlist-moduulin käynnistys epäonnistui:", err);
             }
 
+            // --- Luo intervallitarkistus kaikille jäsenille watchlistiä varten ---
+            const intervalTime = 1000 * 60 * 60 //1000ms*60s = 1min | 1min*60min = 1h
+            setInterval(() => {
+                watchlistModule.scanEveryMember()
+            }, intervalTime)
+
         } catch (error) {
-            console.error("❌ Virhe ready eventissä:", error);
+            console.error("❌ Error loading commands:", error);
         }
     }
 };
