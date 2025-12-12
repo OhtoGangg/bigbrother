@@ -86,15 +86,6 @@ module.exports = (client) => {
 
             await scanWatchlist();
 
-            // Tarkista kaikki jäsenet heti
-            guild.members.cache.forEach(member => checkMemberAgainstWatchlist(member));
-
-            // Event: uusi jäsen liittyy
-            client.on("guildMemberAdd", async (member) => {
-                console.log(`➕ Uusi jäsen liittyi: ${member.user.tag}`);
-                await checkMemberAgainstWatchlist(member);
-            });
-
             // Event: uusi viesti watchlist-kanavalla
             client.on("messageCreate", async (message) => {
                 if (message.channel.id !== WATCHLIST_CHANNEL_ID || message.author.bot) return;
