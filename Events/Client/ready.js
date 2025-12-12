@@ -16,7 +16,7 @@ module.exports = {
 
             // --- Lataa komennot ---
             await loadCommands(client);
-            console.log(Kirjauduttu sisään: ${client.user.tag});
+            console.log(`Kirjauduttu sisään: ${client.user.tag}`);
 
             // --- Lähetä ticket-panel ---
             const ticketChannel = client.channels.cache.get(config.ticket.ticketPanelChannelId);
