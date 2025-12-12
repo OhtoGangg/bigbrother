@@ -5,15 +5,16 @@ const {
     ActionRowBuilder, 
     ModalBuilder, 
     TextInputBuilder, 
-    TextInputStyle,
-    InteractionResponseFlags
+    TextInputStyle
 } = require('discord.js');
 const config = require('../config.json');
 
 module.exports = {
+
     // --- Lähetä allowlist panel ---
     async sendAllowlistPanel(channel) {
         console.log("[DEBUG] sendAllowlistPanel kutsuttu");
+
         const embed = new EmbedBuilder()
             .setTitle('Hae allowlistiä palvelimelle!')
             .setDescription('Paina alla olevaa nappia ja täytä hakemuslomake tarkasti ajatuksen kanssa.')
@@ -29,6 +30,7 @@ module.exports = {
         const sentMessage = await channel.send({ embeds: [embed], components: [row] });
         console.log("[DEBUG] Allowlist panel lähetetty:", sentMessage.id);
     },
+
 
     // --- Interaction handler ---
     async handleInteraction(interaction) {
@@ -50,10 +52,11 @@ module.exports = {
         } catch (err) {
             console.error('[ERROR] Virhe handleInteractionissa:', err);
             if (!interaction.replied && !interaction.deferred) {
-                await interaction.reply({ content: '❌ Tapahtui virhe interaktiossa.', flags: InteractionResponseFlags.Ephemeral });
+                await interaction.reply({ content: '❌ Tapahtui virhe interaktiossa.', ephemeral: true });
             }
         }
     },
+
 
     // --- Modal ---
     async showAllowlistModal(interaction) {
@@ -86,6 +89,7 @@ module.exports = {
         await interaction.showModal(modal);
     },
 
+
     // --- Modal submit ---
     async handleModalSubmit(interaction) {
         console.log("[DEBUG] handleModalSubmit kutsuttu:", interaction.user.tag);
@@ -107,7 +111,7 @@ module.exports = {
         const allowlistChannel = interaction.guild.channels.cache.get(config.channels.allowlistChannel);
         if (!allowlistChannel) {
             if (!interaction.replied) {
-                await interaction.reply({ content: '❌ Virhe: Allowlist-kanavaa ei löydy.', flags: InteractionResponseFlags.Ephemeral });
+                await interaction.reply({ content: '❌ Virhe: Allowlist-kanavaa ei löydy.', ephemeral: true });
             }
             return;
         }
@@ -134,12 +138,13 @@ module.exports = {
             await sentMessage.react('👎');
 
             if (!interaction.replied) {
-                await interaction.reply({ content: '✅ Hakemus lähetetty onnistuneesti!', flags: InteractionResponseFlags.Ephemeral });
+                await interaction.reply({ content: '✅ Hakemus lähetetty onnistuneesti!', ephemeral: true });
             }
         } catch (err) {
             console.error("[ERROR] Hakemuksen lähetys epäonnistui:", err);
+
             if (!interaction.replied) {
-                await interaction.reply({ content: '❌ Hakemuksen lähetys epäonnistui.', flags: InteractionResponseFlags.Ephemeral });
+                await interaction.reply({ content: '❌ Hakemuksen lähetys epäonnistui.', ephemeral: true });
             }
         }
     }
