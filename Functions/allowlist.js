@@ -5,7 +5,8 @@ const {
     ActionRowBuilder, 
     ModalBuilder, 
     TextInputBuilder, 
-    TextInputStyle 
+    TextInputStyle,
+    InteractionResponseFlags
 } = require('discord.js');
 const config = require('../config.json');
 
@@ -49,7 +50,7 @@ module.exports = {
         } catch (err) {
             console.error('[ERROR] Virhe handleInteractionissa:', err);
             if (!interaction.replied && !interaction.deferred) {
-                await interaction.reply({ content: '❌ Tapahtui virhe interaktiossa.', ephemeral: true });
+                await interaction.reply({ content: '❌ Tapahtui virhe interaktiossa.', flags: InteractionResponseFlags.Ephemeral });
             }
         }
     },
@@ -104,7 +105,7 @@ module.exports = {
         const allowlistChannel = interaction.guild.channels.cache.get(config.channels.allowlistChannel);
         if (!allowlistChannel) {
             if (!interaction.replied) {
-                await interaction.reply({ content: '❌ Virhe: Allowlist-kanavaa ei löydy.', ephemeral: true });
+                await interaction.reply({ content: '❌ Virhe: Allowlist-kanavaa ei löydy.', flags: InteractionResponseFlags.Ephemeral });
             }
             return;
         }
@@ -130,12 +131,12 @@ module.exports = {
             await sentMessage.react('👎');
 
             if (!interaction.replied) {
-                await interaction.reply({ content: '✅ Hakemus lähetetty onnistuneesti!', ephemeral: true });
+                await interaction.reply({ content: '✅ Hakemus lähetetty onnistuneesti!', flags: InteractionResponseFlags.Ephemeral });
             }
         } catch (err) {
             console.error("[ERROR] Hakemuksen lähetys epäonnistui:", err);
             if (!interaction.replied) {
-                await interaction.reply({ content: '❌ Hakemuksen lähetys epäonnistui.', ephemeral: true });
+                await interaction.reply({ content: '❌ Hakemuksen lähetys epäonnistui.', flags: InteractionResponseFlags.Ephemeral });
             }
         }
     }
