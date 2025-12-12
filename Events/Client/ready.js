@@ -2,8 +2,6 @@ const { loadCommands } = require("../../Handlers/commandHandler");
 const ticket = require("../../Functions/ticket"); // ticket.js moduuli
 const allowlist = require("../../Functions/allowlist"); // allowlist.js moduuli
 const config = require("../../config.json");
-const watchlistModule = require("../../Functions/watchlist")(client);
-client.watchlist = watchlistModule;
 
 module.exports = {
     name: "clientReady",
