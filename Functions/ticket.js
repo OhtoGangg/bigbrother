@@ -12,7 +12,7 @@ const {
 } = require("discord.js");
 
 module.exports = {
-    // --- TICKET PANEL ---
+    // Tikettipaneeli
     async sendTicketPanel(channel) {
         const embed = new EmbedBuilder()
             .setTitle("Avaa uusi tiketti!")
@@ -29,7 +29,7 @@ module.exports = {
         await channel.send({ embeds: [embed], components: [row] });
     },
 
-    // --- HANDLER ---
+    // Handleri
     async handleInteraction(interaction) {
         if (!interaction.isButton() && !interaction.isStringSelectMenu()) return;
 
@@ -53,7 +53,7 @@ module.exports = {
         }
     },
 
-    // --- SHOW DROPDOWN ---
+    // Dropdown menu
     async showTicketMenu(interaction) {
         const menu = new StringSelectMenuBuilder()
             .setCustomId("ticket_select")
@@ -75,13 +75,13 @@ module.exports = {
         });
     },
 
-    // --- CREATE TICKET CHANNEL ---
+    // Tikettikanavan luonti
     async createTicketChannel(interaction) {
         const guild = interaction.guild;
         const user = interaction.user;
         const selected = interaction.values[0];
 
-        // Remove the dropdown immediately
+        // Tää osio sulkee dropdown menun jne
         await interaction.update({
             content: `🎫 Tiketti luotu: **${selected}**`,
             components: []
@@ -144,7 +144,7 @@ module.exports = {
         });
     },
 
-    // --- CLOSE TICKET ---
+    // Tiketin sulku
     async closeTicket(interaction) {
         const channel = interaction.channel;
         if (!channel) return;
@@ -179,16 +179,16 @@ module.exports = {
                 const creatorId = channel.topic?.split("ticketCreator:")[1];
                 const ticketCreator = interaction.guild.members.cache.get(creatorId)?.user.tag || "Tuntematon";
 
-                // Build transcript
+                // Transcriptin luonti
                 let transcript = 
-`=== Tiketti: ${channel.name} ===
-Aihe: ${channel.name.split("-")[1]}
-Luonut: ${ticketCreator}
-Sulki: ${userClosing.tag}
-Osallistujat: ${participants.join(", ")}
-
---- Viestit ---
-`;
+                    `=== Tiketti: ${channel.name} ===
+                    Aihe: ${channel.name.split("-")[1]}
+                    Luonut: ${ticketCreator}
+                    Sulki: ${userClosing.tag}
+                    Osallistujat: ${participants.join(", ")}
+                    
+                    --- Viestit ---
+                    `;
 
                 messages.reverse().forEach(m => {
                     transcript += `[${m.createdAt.toISOString()}] ${m.author.tag}: ${m.content}\n`;
@@ -221,7 +221,7 @@ Osallistujat: ${participants.join(", ")}
         }, 3000);
     },
 
-    // --- ADD MEMBER ---
+    // Lisää jäsen
     async addMember(interaction, member) {
         const channel = interaction.channel;
 
@@ -237,7 +237,7 @@ Osallistujat: ${participants.join(", ")}
         });
     },
 
-    // --- REMOVE MEMBER ---
+    // Poista jäsen
     async removeMember(interaction, member) {
         const channel = interaction.channel;
 
